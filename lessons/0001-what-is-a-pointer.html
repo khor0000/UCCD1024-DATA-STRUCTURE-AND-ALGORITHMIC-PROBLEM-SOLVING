@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1 — What is a pointer?</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 1 of the linked-list crash sequence · Pointers</div>
+<h1>What is a pointer?</h1>
+
+<p>You already know a variable is a labelled box that holds a value. A pointer is nothing new on top of that — it's just <em>a variable whose value happens to be someone else's locker number.</em></p>
+
+<div class="metaphor">
+<p><span class="term">Picture a gym locker room.</span> Every locker has a number on the door: locker 104, locker 105, and so on. Your gym bag sits inside locker 104. That number, 104, is the locker's <strong>address</strong> — a way to say "over there" without carrying the whole bag around.</p>
+<p>Now imagine you write "my bag is in locker 104" on a sticky note and hand it to a friend. That sticky note is a <strong>pointer</strong>. It doesn't contain your bag — it contains the <em>address</em> of the locker that does.</p>
+</div>
+
+<p>In C++, every variable already lives at an address in memory — you just haven't had to look at it before now. A pointer is a variable whose job is to store one of those addresses.</p>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x104</div>
+    <div class="cell"><span class="item">7</span></div>
+    <div class="addr" style="margin-top:.3rem">x</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="30" y1="6" x2="2" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M9 1L2 6L9 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x200</div>
+    <div class="cell"><span class="next">0x104</span></div>
+    <div class="addr" style="margin-top:.3rem">p</div>
+  </div>
+</div>
+
+<p>Two boxes, two addresses. <code>x</code> lives at address <code>0x104</code> and holds <code>7</code>. <code>p</code> lives at its own address, <code>0x200</code>, and holds <code>0x104</code> — the address of <code>x</code>. The arrow is just a picture of "the value stored here is a locker number, and that locker number points back over there."</p>
+
+<h2>The two symbols</h2>
+
+<p>C++ gives you exactly two operators to move between "the box" and "the address of the box." Confusing these two is the single most common pointer mistake, so get the table below cold before moving on.</p>
+
+<table>
+<thead><tr><th>Symbol</th><th>Read it as</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>&amp;x</code></td><td>"address of x"</td><td>Takes a plain variable, gives you its locker number.</td></tr>
+<tr><td><code>*p</code></td><td>"follow p"</td><td>Takes a pointer (a locker number), gives you what's sitting in that locker.</td></tr>
+</tbody>
+</table>
+
+<pre><code>int x = 7;
+int *p = &amp;x;   // p now holds the address of x — the arrow above
+
+cout &lt;&lt; x;      // 7            (the box itself)
+cout &lt;&lt; &amp;x;     // 0x104        (x's address — some number like this)
+cout &lt;&lt; p;      // 0x104        (p's value IS x's address)
+cout &lt;&lt; *p;     // 7            (follow p, read what's there — same as x)</code></pre>
+
+<div class="note">Notice <code>*</code> shows up twice with two different jobs: in <code>int *p</code> it's part of <em>declaring</em> a pointer ("p is a pointer to an int"). In <code>*p</code> on its own, it <em>dereferences</em> — follows the arrow. Same symbol, different moment. This will stop being confusing once you've used it a dozen times; it won't get a lesson of its own.</div>
+
+<p>Primary source if you want another explanation of the same idea before the quiz: <a href="https://www.learncpp.com/cpp-tutorial/introduction-to-pointers/" target="_blank" rel="noopener">learncpp.com — Introduction to pointers</a>.</p>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — if <code>int x = 7; int *p = &amp;x;</code>, what does <code>*p</code> give you?</p>
+  <button class="opt" data-correct>7 — the value stored in x</button>
+  <button class="opt">The address of x, like 0x104</button>
+  <button class="opt">The address of p itself</button>
+  <div class="feedback good" data-feedback-good>Right. <code>p</code> holds x's address; <code>*p</code> follows that address and hands you what's sitting there — 7.</div>
+  <div class="feedback bad" data-feedback-bad>Not quite — that's what <code>p</code> alone (no star) would give you. <code>*p</code> means "follow the address stored in p," which lands you back at <code>x</code>'s value, 7.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="&amp;x|&x">
+  <p class="prompt">Second check — what expression would you write to get <strong>the address of x</strong> (not its value)?</p>
+  <input type="text" placeholder="type the C++ expression">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — <code>&amp;x</code>, "address of x."</div>
+  <div class="feedback bad" data-feedback-bad>Think about which symbol means "address of" versus "follow" — check the table above.</div>
+</div>
+
+<p class="ask-agent">Anything about addresses or the two symbols still fuzzy? Ask your tutor before moving on — this is the one idea everything else in linked lists is built on.</p>
+
+<div class="nav">
+  <span>&larr; start</span>
+  <a href="0002-structs.html">next: structs &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

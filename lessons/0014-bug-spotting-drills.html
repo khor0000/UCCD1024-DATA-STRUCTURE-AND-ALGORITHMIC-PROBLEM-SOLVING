@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14 — Bug-spotting drills</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 14 of the linked-list crash sequence · The actual test format</div>
+<h1>Bug-spotting drills</h1>
+
+<p>This is the format you confirmed for tomorrow: you'll be handed working-looking <code>List</code>/<code>Node</code> code with one fault planted in it, and asked to find it. Six drills below, each a realistic variant of a function you've now built by hand. Read each one line by line before picking an answer — resist the urge to pattern-match on "insert looks basically right."</p>
+
+<h2>Drill 1 — find</h2>
+<pre><code>Node *List::find(int position) {
+    Node *cur;
+    if (position &gt; count) return NULL;
+    cur = head;
+    for (int count=1; count&lt;=position; count++)
+        cur = cur-&gt;next;
+    return cur;
+}</code></pre>
+<div class="quiz" data-quiz>
+  <p class="prompt">What's wrong?</p>
+  <button class="opt">Nothing — this is correct</button>
+  <button class="opt" data-correct>The loop condition should be count&lt;position, not count&lt;=position — this walks one node too far, and can run cur-&gt;next off the end of the list</button>
+  <button class="opt">head should be reassigned inside the loop, not cur</button>
+  <div class="feedback good" data-feedback-good>Right. find(1) should take 0 steps (cur already at head) but this version takes 1, landing on position 2 instead — and find(count) walks one past the last real node, risking cur-&gt;next on a NULL cur.</div>
+  <div class="feedback bad" data-feedback-bad>Compare against the version you traced in the find(position) lesson: the loop should stop one step earlier than this one does. Count how many times each version's loop body runs for find(1).</div>
+</div>
+
+<h2>Drill 2 — insert, skipping the position-1 case</h2>
+<pre><code>bool List::insert(int at, int newItem) {
+    Node *pre, *cur, *tmp = new Node(newItem);
+    if (at &lt; 1 || at &gt; count+1) return false;
+    if (!tmp) return false;
+
+    pre = find(at-1);
+    cur = pre-&gt;next;
+    tmp-&gt;next = cur;
+    pre-&gt;next = tmp;
+    count++;
+    return true;
+}</code></pre>
+<div class="quiz" data-quiz>
+  <p class="prompt">This drops the empty-list and position-1 special cases entirely, going straight to the general case. What actually happens when you call <code>insert(1, 5)</code> on the list <code>10 → 20</code>?</p>
+  <button class="opt">It correctly inserts 5 as the new head</button>
+  <button class="opt" data-correct>find(0) returns head (10) instead of NULL/nothing, so pre ends up being 10 — the new node gets spliced in AFTER 10 instead of becoming the new head</button>
+  <button class="opt">It crashes immediately, no matter what</button>
+  <div class="feedback good" data-feedback-good>Right — trace find(0): the guard only checks position &gt; count, so 0 isn't rejected; the loop condition count &lt; 0 is false immediately, so it returns cur = head unchanged. pre = head, and the new node lands at position 2, not position 1.</div>
+  <div class="feedback bad" data-feedback-bad>Trace find(0) by hand using the exact find code from the find(position) lesson — does it return NULL, or something else?</div>
+</div>
+
+<h2>Drill 3 — insert, missing count++</h2>
+<pre><code>pre = find(at-1);
+cur = pre-&gt;next;
+tmp-&gt;next = cur;
+pre-&gt;next = tmp;
+return true;</code></pre>
+<div class="quiz" data-quiz>
+  <p class="prompt">What's wrong, and what breaks as a result?</p>
+  <button class="opt">Nothing — count isn't needed for insert to work</button>
+  <button class="opt" data-correct>count++ is missing — the node IS correctly linked into the chain, but count now undercounts, so find()'s upper-bound guard will wrongly reject valid positions that include the new node</button>
+  <button class="opt">tmp-&gt;next = cur should come after pre-&gt;next = tmp</button>
+  <div class="feedback good" data-feedback-good>Right — the linking itself is fine here, which makes this bug sneaky: the list looks correct if you only print it, but count and the chain have quietly gone out of sync.</div>
+  <div class="feedback bad" data-feedback-bad>Read every line for what's <em>missing</em>, not just what's there — compare line-by-line against the real insert general case.</div>
+</div>
+
+<h2>Drill 4 — insert at position 1, order swapped</h2>
+<pre><code>if (at == 1) {
+    head = tmp;
+    tmp-&gt;next = head;
+    count++;
+    return true;
+}</code></pre>
+<div class="quiz" data-quiz>
+  <p class="prompt">What's wrong?</p>
+  <button class="opt">Nothing — order doesn't matter for two assignments like this</button>
+  <button class="opt" data-correct>head is overwritten before tmp-&gt;next reads it, so tmp-&gt;next ends up pointing at tmp itself, and the rest of the old list is lost</button>
+  <button class="opt">count++ should happen before head = tmp</button>
+  <div class="feedback good" data-feedback-good>Right — this is the exact ordering trap from the insert-position-1 lesson. The fix is simply swapping the two lines.</div>
+  <div class="feedback bad" data-feedback-bad>Walk it in order: after line 1, what does head equal? Then what does line 2 actually assign to tmp-&gt;next?</div>
+</div>
+
+<h2>Drill 5 — remove, freed before relinking</h2>
+<pre><code>pre = find(from-1);
+cur = pre-&gt;next;
+free(cur);
+pre-&gt;next = cur-&gt;next;
+count--;
+return true;</code></pre>
+<div class="quiz" data-quiz>
+  <p class="prompt">What's wrong?</p>
+  <button class="opt">Nothing — cur was already read into pre-&gt;next earlier</button>
+  <button class="opt" data-correct>cur-&gt;next is read AFTER free(cur) — that's reading through a dangling pointer, undefined behavior</button>
+  <button class="opt">pre-&gt;next should be set to cur, not cur-&gt;next</button>
+  <div class="feedback good" data-feedback-good>Right — the rule from the remove-general-case lesson: read everything you need from a node before you free it, never after. Swap the free(cur) line to come last.</div>
+  <div class="feedback bad" data-feedback-bad>Look at what free(cur) does to cur, then check what the very next line tries to read from cur.</div>
+</div>
+
+<h2>Drill 6 — remove position 1, head moved too early</h2>
+<pre><code>if (from == 1) {
+    head = head-&gt;next;
+    count--;
+    free(head);
+    return true;
+}</code></pre>
+<div class="quiz" data-quiz>
+  <p class="prompt">What's wrong?</p>
+  <button class="opt">Nothing — this correctly removes the old head</button>
+  <button class="opt" data-correct>head was reassigned before the old head was saved anywhere, so free(head) frees the NEW head (the node that should survive) — the actual old head leaks, and the list is left pointing at a freed node</button>
+  <button class="opt">count-- should happen after free(head), not before</button>
+  <div class="feedback good" data-feedback-good>Right — this needs a temporary pointer (traditionally called cur) to remember the old head BEFORE head moves, exactly like the remove-position-1 lesson showed.</div>
+  <div class="feedback bad" data-feedback-bad>Ask: by the time free(head) runs, which node does head actually point to — the one that should be removed, or the one that should survive?</div>
+</div>
+
+<p class="ask-agent">If you got every drill right on the first try, you're in good shape for tomorrow. If any took a second guess, ask your tutor to make up two or three more variants of just that one — repetition on the specific pattern you missed is worth more right now than moving forward.</p>
+
+<div class="nav">
+  <a href="0013-draw-the-state-practice.html">&larr; draw-the-state practice</a>
+  <span>end of tonight's crash sequence</span>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

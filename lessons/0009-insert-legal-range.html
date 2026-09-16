@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9 — Where can you insert?</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 9 of the linked-list crash sequence · Insert (part 1 of 4)</div>
+<h1>Where can you insert?</h1>
+
+<div class="metaphor">
+<p><span class="term">The whole job of insert, before any code.</span> Think of the chain as a line of railway carriages, and <code>insert(at, newItem)</code> as squeezing one brand-new carriage into the line at position <code>at</code>. To do that, four things have to happen, always in this order:</p>
+<ol>
+<li><strong>Check the request makes sense.</strong> Can't insert at a position that doesn't exist yet, or one that's too far past the end.</li>
+<li><strong>Build the new carriage.</strong> <code>new Node(newItem)</code> on the heap — it exists, but isn't coupled to anything yet.</li>
+<li><strong>Walk to the coupling point.</strong> Find the carriage that will sit just <em>before</em> the new one (unless the new one is going at the very front — that's a special case, no "before" exists).</li>
+<li><strong>Couple it in.</strong> Two arrows get rewritten: the new carriage points at what used to come next, and the carriage before it points at the new one instead.</li>
+</ol>
+<p>That's the entire shape of <code>insert</code>. This lesson (and the three after it) each take <strong>one</strong> of those four steps and drill it alone — not because the others don't matter yet, but because trying to hold all four in your head at once is exactly what "insert" feels overwhelming from the outside.</p>
+</div>
+
+<p>This lesson is step 1 only: is <code>at</code> even a legal position? Nothing about building the node or rewiring arrows yet — that's <code>0009b</code>/<code>0009c</code>/<code>0010</code>.</p>
+
+<pre><code>bool List::insert(int at, int newItem) {
+    if (at &lt; 1 || at &gt; count+1) return false;   // ← this lesson (step 1)
+    ...
+}</code></pre>
+
+<h2>Why count+1, not count?</h2>
+
+<p>For a list with 3 items, here's every value of <code>at</code> and whether it's legal:</p>
+
+<table>
+<thead><tr><th><code>at</code></th><th>Legal?</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>No</td><td>positions start at 1, not 0</td></tr>
+<tr><td>1</td><td>Yes</td><td>new first item, pushes everything back</td></tr>
+<tr><td>2</td><td>Yes</td><td>new second item</td></tr>
+<tr><td>3</td><td>Yes</td><td>new third item, pushes the old 3rd back to 4th</td></tr>
+<tr><td>4 (= count+1)</td><td>Yes</td><td><strong>append</strong> — one slot past the last real item</td></tr>
+<tr><td>5</td><td>No</td><td>would leave a gap — nothing would occupy position 4</td></tr>
+</tbody>
+</table>
+
+<p><code>count+1</code> is legal because inserting doesn't require a slot to already exist there — it's creating one. Appending to the end is just "insert one past the last item," so the range of legal positions has to reach one further than the number of items currently there.</p>
+
+<div class="metaphor">
+<p><span class="term">A queue of people, and the very back.</span> If 3 people are queuing, you can join at position 1, 2, or 3 (pushing everyone from there back), or you can join at position 4 — the empty spot right behind the last person. You can't join at position 5; there's no one at position 4 yet for you to stand behind.</p>
+</div>
+
+<h2>Contrast with find's guard</h2>
+
+<p><code>find</code>'s guard from Lesson 8 was <code>if (position &gt; count) return NULL;</code> — no <code>+1</code>. That's not an inconsistency; it's because the two functions are answering different questions:</p>
+
+<table>
+<thead><tr><th>Function</th><th>Guard</th><th>Because</th></tr></thead>
+<tbody>
+<tr><td><code>find(position)</code></td><td><code>position &gt; count</code></td><td>can only point <em>at</em> a node that already exists — max valid position is <code>count</code></td></tr>
+<tr><td><code>insert(at, ...)</code></td><td><code>at &gt; count+1</code></td><td>can create a brand-new slot one past the end — max valid position is <code>count+1</code></td></tr>
+</tbody>
+</table>
+
+<p>Same-looking guard, different number, for a real reason: <code>find</code> can never return a node that isn't there yet; <code>insert</code>'s whole job is to create one.</p>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — for a list with count = 5, what is the largest legal value of at for insert?</p>
+  <button class="opt">5</button>
+  <button class="opt" data-correct>6</button>
+  <button class="opt">10</button>
+  <div class="feedback good" data-feedback-good>Right — count+1 = 6, meaning "append after the 5th item."</div>
+  <div class="feedback bad" data-feedback-bad>The legal range is 1 through count+1. With count = 5, that's 6.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="count|count.">
+  <p class="prompt">Second check — one word: what is find's upper bound for position (no +1)?</p>
+  <input type="text" placeholder="one word">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Right — count, because find only ever points at an existing node, never a new one.</div>
+  <div class="feedback bad" data-feedback-bad>Re-read the contrast table above — find's row names it directly.</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book</strong>
+  <p>Close this page. On paper, write the single guard line that rejects an illegal <code>at</code>. Then state the largest legal <code>at</code> for a list with <code>count = 3</code>, and why it isn't <code>3</code>.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+  <pre><code>if (at &lt; 1 || at &gt; count+1) return false;</code></pre>
+  <p>Largest legal <code>at</code> is <code>4</code> (<code>count+1</code>): inserting can create a brand-new slot one past the last item &mdash; that is what "append" is. <code>find</code>'s bound is only <code>count</code> because it can never point at a node that does not exist yet.</p>
+</details>
+
+<p class="ask-agent">Next: the actual mechanics of insert, one case at a time — starting with the simplest, an empty list.</p>
+
+<div class="nav">
+  <a href="0008-find-position.html">&larr; find(position)</a>
+  <a href="0009b-insert-empty-list.html">next: insert — the empty list case &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

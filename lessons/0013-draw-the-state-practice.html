@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13 — Draw the state</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 13 of the linked-list crash sequence · Midterm Q3a</div>
+<h1>Draw the state</h1>
+
+<p><strong>Q3a does not ask you to write code. It hands you code and asks you to draw the chain it produces — boxes and arrows, on paper.</strong> This lesson is that one skill, drilled three times.</p>
+
+<p>The only code you will see below is code you have already met: <code>new Node</code>, <code>-&gt;item</code>, <code>-&gt;next</code>, and assigning to a pointer. Nothing else. No new syntax appears in this lesson.</p>
+
+<h2>Before you start — 60 seconds, from memory</h2>
+
+<div class="paper-task">
+  <strong class="title">Retrieval check &bull; before reading on</strong>
+  <p>On paper, without scrolling back:</p>
+  <p>1. <code>p</code> is a pointer to a <code>Node</code>. Write the statement that reads that node's <code>item</code>.<br>
+     2. <code>n</code> is a plain (non-pointer) <code>Node</code> variable. Write the statement that reads <em>its</em> <code>item</code>.<br>
+     3. Write the one line that moves a pointer <code>cur</code> along to the next node.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal answers</summary>
+  <pre><code>p-&gt;item      // pointer  → arrow
+n.item       // plain variable → dot
+cur = cur-&gt;next;</code></pre>
+  <p>If any of those three did not come out, stop and re-read <a href="0003-pointers-to-structs.html">lesson 3</a> and <a href="0006c-tracing-the-traversal-loop.html">lesson 6c</a> before continuing. Everything below is built on them.</p>
+</details>
+
+<h2>What you are drawing</h2>
+
+<p>Metaphor first: a <code>Node</code> is a railway carriage. It carries cargo (<code>item</code>), and it is coupled to the next carriage (<code>next</code>). A pointer like <code>head</code> is not a carriage — it is a signpost standing beside the track, saying "the front carriage is over there."</p>
+
+<pre><code>struct Node {
+    int   item;
+    Node *next;
+};</code></pre>
+
+<p>So a drawing has exactly two kinds of mark, and mixing them up is the fastest way to lose the marks:</p>
+
+<table>
+<thead><tr><th>Thing</th><th>How you draw it</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>a <code>Node</code></td><td><strong>two</strong>-cell box: item | next</td><td>it holds two fields</td></tr>
+<tr><td><code>head</code>, <code>tmp</code>, <code>cur</code> — any pointer</td><td><strong>one</strong>-cell box, arrow out of it</td><td>it holds one thing: an address</td></tr>
+</tbody>
+</table>
+
+<p>You might reasonably wonder: <em>why bother drawing the pointer as its own box at all — why not just draw an arrow from thin air?</em> Because a pointer is a variable that lives somewhere and holds a value, exactly like an <code>int</code> does. The whole family of bugs in Exercise 3 only becomes visible once <code>head</code> has its own box you can watch change.</p>
+
+<div class="note"><strong>The method, three steps.</strong> (1) Draw the picture before you read any statement. (2) Do <em>one</em> statement, then redraw the whole picture. (3) Only then read the next statement. Do not hold two statements in your head at once — that is what loses the mark, every time.</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Two Pointers Are Never One Box</strong>
+  <p>When <code>tmp</code> and <code>head</code> hold the same address, it is tempting to draw a single box labelled <code>head/tmp</code>. They are <strong>two separate variables at two separate addresses</strong> that happen to hold equal values &mdash; exactly like <code>int x = 5; int y = 5;</code>. Merged into one box, the drawing can no longer show what <code>tmp</code> was for, and cannot show a step where one moves and the other does not. That step is usually the whole question.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>head</code> at <code>0x900</code> and <code>tmp</code> at <code>0x904</code>, both holding <code>0x500</code>, both arrows converging on that node</td>
+      <td>one box labelled <code>head/tmp</code></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<h2>Exercise 1 — building a chain by hand</h2>
+
+<p>Start: nothing exists. Then:</p>
+
+<pre><code>Node *head = new Node;
+head-&gt;item = 10;
+head-&gt;next = NULL;</code></pre>
+
+<div class="paper-task">
+  <strong class="title">On paper &bull; before revealing anything</strong>
+  <p>Draw the picture after all three statements. Show <code>head</code> as its own one-cell box.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal — final state</summary>
+  <p>One node exists at address <code>0x500</code>. <code>head</code> is a separate variable, living at <code>0x900</code>, and the value it holds is <code>0x500</code>.</p>
+  <div class="diagram">
+    <div class="node highlight">
+      <div class="addr">0x900</div>
+      <div class="cell"><span class="next">0x500</span></div>
+      <div class="addr" style="margin-top:.3rem">head</div>
+    </div>
+    <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+    <div class="node">
+      <div class="addr">0x500</div>
+      <div class="cell"><span class="item">10</span><span class="next null">NULL</span></div>
+    </div>
+  </div>
+  <p>The exact hex numbers are never marked — you may invent your own. What is marked is that <code>head</code> and the node are <em>two separate boxes</em>, joined by an arrow.</p>
+</details>
+
+<h2>Exercise 2 — a longer chain, drawn one statement at a time</h2>
+
+<p>Start: nothing exists. Then:</p>
+
+<pre><code>Node *head = new Node;
+head-&gt;item = 10;
+
+Node *second = new Node;
+second-&gt;item = 20;
+second-&gt;next = NULL;
+
+head-&gt;next = second;</code></pre>
+
+<div class="paper-task">
+  <strong class="title">On paper &bull; two drawings</strong>
+  <p>Draw the picture after the <em>second</em> block (both nodes exist, not yet joined). Then draw it again after the last line. Two separate drawings.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal stage 1 — both nodes made, not yet joined</summary>
+  <p>Two nodes exist and two pointers exist. Nothing connects the nodes to each other yet — <code>head-&gt;next</code> has not been set, so leave it blank or mark it <code>?</code>.</p>
+  <div class="diagram">
+    <div class="node">
+      <div class="addr">0x900</div>
+      <div class="cell"><span class="next">0x500</span></div>
+      <div class="addr" style="margin-top:.3rem">head</div>
+    </div>
+    <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+    <div class="node">
+      <div class="addr">0x500</div>
+      <div class="cell"><span class="item">10</span><span class="next">?</span></div>
+    </div>
+  </div>
+  <div class="diagram">
+    <div class="node">
+      <div class="addr">0x904</div>
+      <div class="cell"><span class="next">0x520</span></div>
+      <div class="addr" style="margin-top:.3rem">second</div>
+    </div>
+    <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+    <div class="node">
+      <div class="addr">0x520</div>
+      <div class="cell"><span class="item">20</span><span class="next null">NULL</span></div>
+    </div>
+  </div>
+</details>
+
+<details class="reveal">
+  <summary>reveal stage 2 — after <code>head-&gt;next = second;</code></summary>
+  <p>One mark changes: node 10's <code>next</code> cell now holds <code>0x520</code>. Nothing moved. Nodes never shuffle along the page — only the values inside <code>next</code> cells change.</p>
+  <div class="diagram">
+    <div class="node">
+      <div class="addr">0x900</div>
+      <div class="cell"><span class="next">0x500</span></div>
+      <div class="addr" style="margin-top:.3rem">head</div>
+    </div>
+    <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+    <div class="node">
+      <div class="addr">0x500</div>
+      <div class="cell"><span class="item">10</span><span class="next highlight">0x520</span></div>
+    </div>
+    <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+    <div class="node">
+      <div class="addr">0x520</div>
+      <div class="cell"><span class="item">20</span><span class="next null">NULL</span></div>
+    </div>
+  </div>
+  <p><code>second</code> still exists and still points at node 20. It is simply not drawn above, because the chain from <code>head</code> is what the question asks about. If a question mentions a pointer by name, draw it.</p>
+</details>
+
+<details class="reveal">
+  <summary>step through it line by line</summary>
+  <p>Click <em>run next line</em> once per statement. The table shows what every box holds at that instant; the row that changed is marked.</p>
+  <div class="stepper" data-stepper>
+    <script type="application/json">
+    {
+      "code": [
+        "Node *head = new Node;",
+        "head->item = 10;",
+        "Node *second = new Node;",
+        "second->item = 20;",
+        "second->next = NULL;",
+        "head->next = second;"
+      ],
+      "stages": [
+        { "line": -1, "caption": "Nothing exists yet.", "ptrs": [], "nodes": [] },
+        { "line": 0, "caption": "A node is built on the heap at 0x500. <code>head</code> is a <em>separate</em> variable at 0x900, and the value it holds is that node's address.",
+          "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"} ],
+          "nodes": [ {"addr":"0x500","item":"0","next":"NULL","note":"default constructor ran"} ] },
+        { "line": 1, "caption": "The <code>item</code> cell inside node 0x500 changes. <code>head</code> itself does not change — it still holds 0x500.",
+          "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"} ],
+          "nodes": [ {"addr":"0x500","item":"10","next":"NULL"} ] },
+        { "line": 2, "caption": "A second node at 0x520, and a second pointer variable at 0x904.",
+          "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"second","addr":"0x904","val":"0x520"} ],
+          "nodes": [ {"addr":"0x500","item":"10","next":"NULL"}, {"addr":"0x520","item":"0","next":"NULL"} ] },
+        { "line": 3, "caption": "Node 0x520's item becomes 20.",
+          "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"second","addr":"0x904","val":"0x520"} ],
+          "nodes": [ {"addr":"0x500","item":"10","next":"NULL"}, {"addr":"0x520","item":"20","next":"NULL"} ] },
+        { "line": 4, "caption": "Setting it to NULL again — no visible change, but now it is NULL on purpose rather than by luck.",
+          "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"second","addr":"0x904","val":"0x520"} ],
+          "nodes": [ {"addr":"0x500","item":"10","next":"NULL"}, {"addr":"0x520","item":"20","next":"NULL"} ] },
+        { "line": 5, "copy": {"from":"ptr:second","to":"node:0x500.next"}, "caption": "The join. Node 0x500's <code>next</code> cell takes the value <code>second</code> is holding — 0x520. Nothing moved on the page; one cell changed.",
+          "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"second","addr":"0x904","val":"0x520"} ],
+          "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"NULL"} ] }
+      ]
+    }
+    </script>
+  </div>
+</details>
+
+<div class="quiz short" data-quiz-short data-answer="10,20|10, 20">
+  <p class="prompt">Walking from <code>head</code> and printing every <code>item</code> until <code>NULL</code>, what is printed?</p>
+  <input type="text" placeholder="comma-separated, e.g. 1,2,3">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Right — 10 then 20, and then <code>next</code> is <code>NULL</code> so the walk stops.</div>
+  <div class="feedback bad" data-feedback-bad>Follow the arrows out of <code>head</code>, one node at a time, and stop when a <code>next</code> cell holds <code>NULL</code>.</div>
+</div>
+
+<h2>Exercise 3 — drawing a state that is broken</h2>
+
+<p>Sometimes the code you are given is wrong, and you must draw what it <em>actually</em> produces, not what it was meant to produce. Start: a chain <code>10 → 20</code>, with <code>head</code> holding <code>0x500</code>. Someone writes this, meaning "put a new node 5 at the front":</p>
+
+<pre><code>Node *tmp = new Node;
+tmp-&gt;item = 5;
+head = tmp;          // <mark class="fault">line A</mark>
+tmp-&gt;next = head;    // <mark class="fault">line B</mark></code></pre>
+
+<div class="paper-task">
+  <strong class="title">On paper &bull; two drawings, one per line</strong>
+  <p>Draw the state after line A, then after line B. Take each line completely literally — a line reads whatever the variable holds <em>at that moment</em>, not what you intended it to hold.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal stage 1 — after line A, <code>head = tmp;</code></summary>
+  <p><code>head</code>'s cell now holds <code>0x560</code>, the new node's address. Node 10 sits at <code>0x500</code> and nothing points at it any more.</p>
+  <div class="diagram">
+    <div class="node">
+      <div class="addr">0x900</div>
+      <div class="cell"><span class="next highlight">0x560</span></div>
+      <div class="addr" style="margin-top:.3rem">head</div>
+    </div>
+    <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+    <div class="node">
+      <div class="addr">0x560</div>
+      <div class="cell"><span class="item">5</span><span class="next">?</span></div>
+      <div class="addr" style="margin-top:.3rem">next not set yet</div>
+    </div>
+  </div>
+  <div class="diagram">
+    <div class="node">
+      <div class="addr">0x500</div>
+      <div class="cell"><span class="item">10</span><span class="next">0x520</span></div>
+      <div class="addr" style="margin-top:.3rem">nothing points here now</div>
+    </div>
+    <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+    <div class="node">
+      <div class="addr">0x520</div>
+      <div class="cell"><span class="item">20</span><span class="next null">NULL</span></div>
+    </div>
+  </div>
+</details>
+
+<details class="reveal">
+  <summary>reveal stage 2 — after line B, <code>tmp-&gt;next = head;</code></summary>
+  <p>Line B copies whatever <code>head</code> holds <em>right now</em>. Line A already changed that to <code>0x560</code> — the new node's own address. So the new node's <code>next</code> ends up pointing at itself.</p>
+  <div class="diagram">
+    <div class="node">
+      <div class="addr">0x900</div>
+      <div class="cell"><span class="next">0x560</span></div>
+      <div class="addr" style="margin-top:.3rem">head</div>
+    </div>
+    <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+    <div class="node highlight">
+      <div class="addr">0x560</div>
+      <div class="cell"><span class="item">5</span><span class="next highlight">0x560</span></div>
+      <div class="addr" style="margin-top:.3rem">points at itself</div>
+    </div>
+  </div>
+  <p>Nodes 10 and 20 still physically exist, but no pointer anywhere holds <code>0x500</code>. The program has permanently lost the way back to them — that is a <strong>memory leak</strong>. And walking this chain from <code>head</code> would print 5 forever, because <code>cur = cur-&gt;next</code> never moves anywhere.</p>
+</details>
+
+<details class="reveal">
+  <summary>step through the broken version, line by line</summary>
+  <div class="stepper" data-stepper>
+    <script type="application/json">
+    {
+      "code": [
+        "Node *tmp = new Node(5);",
+        "head = tmp;",
+        "tmp->next = head;"
+      ],
+      "stages": [
+        { "line": -1, "caption": "The chain 10 → 20, with <code>head</code> holding 0x500.",
+          "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"} ],
+          "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"NULL"} ] },
+        { "line": 0, "caption": "A new node at 0x560. <code>tmp</code> holds its address. Nothing is joined yet — watch <code>tmp</code>'s <code>next</code>, which the one-argument constructor never set.",
+          "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"tmp","addr":"0x904","val":"0x560"} ],
+          "nodes": [ {"addr":"0x560","item":"5","next":"?","note":"next never set"}, {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"NULL"} ] },
+        { "line": 1, "copy": {"from":"ptr:tmp","to":"ptr:head"}, "caption": "<code>head</code>'s cell is overwritten with 0x560. <strong>The value 0x500 is now gone from the program.</strong> Nothing else holds it, so nodes 10 and 20 have just become unreachable — look at the last two rows.",
+          "ptrs": [ {"name":"head","addr":"0x900","val":"0x560"}, {"name":"tmp","addr":"0x904","val":"0x560"} ],
+          "nodes": [ {"addr":"0x560","item":"5","next":"?"}, {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"NULL"} ] },
+        { "line": 2, "copy": {"from":"ptr:head","to":"node:0x560.next"}, "caption": "This line copies whatever <code>head</code> holds <em>right now</em> — which line 1 already changed to 0x560. So the new node's <code>next</code> points at the new node. A walk from <code>head</code> prints 5 forever.",
+          "ptrs": [ {"name":"head","addr":"0x900","val":"0x560"}, {"name":"tmp","addr":"0x904","val":"0x560"} ],
+          "nodes": [ {"addr":"0x560","item":"5","next":"0x560","note":"points at itself"}, {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"NULL"} ] }
+      ]
+    }
+    </script>
+  </div>
+</details>
+
+<h2>Your version — the same three lines, in the right order</h2>
+
+<p>This is what you wrote, and it is correct:</p>
+
+<pre><code>Node *tmp = new Node(50);
+tmp-&gt;next = head;
+head = tmp;</code></pre>
+
+<p>Step it and watch the one difference that matters: on line 2, <code>head</code> still holds the <em>old</em> first node's address, so the new node captures it before it is lost.</p>
+
+<div class="stepper" data-stepper>
+  <script type="application/json">
+  {
+    "code": [
+      "Node *tmp = new Node(50);",
+      "tmp->next = head;",
+      "head = tmp;"
+    ],
+    "stages": [
+      { "line": -1, "caption": "The chain 10 → 20, with <code>head</code> holding 0x500.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"NULL"} ] },
+      { "line": 0, "caption": "A new node at 0x560 holding 50. <code>head</code> is untouched — it still holds 0x500.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"tmp","addr":"0x904","val":"0x560"} ],
+        "nodes": [ {"addr":"0x560","item":"50","next":"?","note":"next not set yet"}, {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"NULL"} ] },
+      { "line": 1, "copy": {"from":"ptr:head","to":"node:0x560.next"}, "caption": "<strong>This is the line that saves the list.</strong> <code>head</code> still holds 0x500, so the new node's <code>next</code> captures 0x500. The old chain is now safely hooked on behind it.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"tmp","addr":"0x904","val":"0x560"} ],
+        "nodes": [ {"addr":"0x560","item":"50","next":"0x500"}, {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"NULL"} ] },
+      { "line": 2, "copy": {"from":"ptr:tmp","to":"ptr:head"}, "caption": "Only now does <code>head</code> move. Every node is still reachable: 50 → 10 → 20.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x560"}, {"name":"tmp","addr":"0x904","val":"0x560"} ],
+        "nodes": [ {"addr":"0x560","item":"50","next":"0x500"}, {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"NULL"} ] }
+    ]
+  }
+  </script>
+</div>
+
+<p>You might reasonably wonder: <em>the two versions have the same two lines — why does order matter at all?</em> Because <code>head</code> is a box holding <strong>one</strong> value. Writing into it destroys what was there. Line 2 in the broken version tries to read a value that line 1 already erased. Read before you overwrite.</p>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Link The New Node Before Moving Head</strong>
+  <p>When putting a node at the front, the new node must be linked to the old first node <em>before</em> <code>head</code> is changed. Once <code>head</code> has moved, the old address is gone and cannot be read back.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>tmp-&gt;next = head;</code><br><code>head = tmp;</code></td>
+      <td><code>head = tmp;</code><br><code>tmp-&gt;next = head;</code></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book</strong>
+  <p>Close this page. On paper, write the two lines that put a new node <code>tmp</code> at the front of a chain, in the correct order. Then say in one sentence why that order and not the other.</p>
+</div>
+
+<h2>Exercise 4 — a sequence of <code>list.insert</code> / <code>list.remove</code> calls</h2>
+
+<p><strong>This is the exact shape of Q3a(ii).</strong> The question gives you a series of whole-list operations — <code>list.insert(at, x)</code>, <code>list.remove(from)</code> — and asks for the chain after each one. Positions are <strong>1-indexed</strong>: position 1 is the head.</p>
+
+<p>Start: empty list. Then:</p>
+
+<pre><code>list.insert(1, 3);
+list.insert(2, 7);
+list.insert(3, 5);
+list.insert(4, 8);
+list.remove(1);
+list.remove(2);</code></pre>
+
+<div class="paper-task">
+  <strong class="title">On paper &bull; one drawing per call, six in total</strong>
+  <p>Draw the chain (values + arrows + <code>NULL</code> at the end) and write <code>count</code> after <em>every</em> line. Before each <code>remove</code>, re-number the nodes from <code>head</code> — 1, 2, 3… — and only then decide which node the number hits.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal — after the four inserts</summary>
+  <p><code>3 → 7 → 5 → 8 → NULL</code>, <code>count = 4</code>. Positions: <code>3</code> is 1, <code>7</code> is 2, <code>5</code> is 3, <code>8</code> is 4.</p>
+</details>
+
+<details class="reveal">
+  <summary>reveal — after <code>list.remove(1);</code></summary>
+  <p>Position 1 is the node holding <code>3</code>. It goes. <code>head</code> now points at <code>7</code>.</p>
+  <p><code>7 → 5 → 8 → NULL</code>, <code>count = 3</code>. <strong>Re-number now:</strong> <code>7</code> is position 1, <code>5</code> is position 2, <code>8</code> is position 3.</p>
+</details>
+
+<details class="reveal">
+  <summary>reveal — after <code>list.remove(2);</code></summary>
+  <p>Position 2 — in the list <em>as it stands now</em> — is the node holding <code>5</code>, not the original position-2 node. So <code>5</code> goes.</p>
+  <p><code>7 → 8 → NULL</code>, <code>count = 2</code>.</p>
+  <p>If you got <code>5 → 8</code> here, you ran <code>remove(1)</code> twice: you deleted position 1, then deleted what was <em>still</em> labelled position 1 in your head instead of re-numbering.</p>
+</details>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Re-number After Every Call</strong>
+  <p>Each call in the sequence acts on the list left behind by the one before it. The moment a node is removed, every node after it shifts down one position. <code>remove(1)</code> then <code>remove(2)</code> deletes the original 1st node and the original <em>3rd</em> node — never the same node twice.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td>re-count <code>1, 2, 3…</code> from <code>head</code> immediately before each call, then apply it</td>
+      <td>keep the position labels from the original list for the whole sequence</td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book, fresh numbers</strong>
+  <p>Close this page. Start from an empty list. Draw the chain and write <code>count</code> after each call:</p>
+  <p><code>list.insert(1, 4);</code> · <code>list.insert(2, 9);</code> · <code>list.insert(3, 6);</code> · <code>list.insert(1, 2);</code> · <code>list.remove(3);</code> · <code>list.remove(1);</code></p>
+</div>
+
+<details class="reveal">
+  <summary>reveal — final answer only (do the intermediate steps first)</summary>
+  <p>After the inserts: <code>2 → 4 → 9 → 6 → NULL</code>, <code>count = 4</code> (the <code>insert(1,2)</code> puts <code>2</code> at the front).</p>
+  <p>After <code>remove(3)</code>: position 3 is <code>9</code> → <code>2 → 4 → 6 → NULL</code>, <code>count = 3</code>.</p>
+  <p>After <code>remove(1)</code>: <code>4 → 6 → NULL</code>, <code>count = 2</code>.</p>
+</details>
+
+<p class="ask-agent">Bring your drawings to me and I'll mark them box by box. If a stage came out wrong, say which one — the wrong stage tells me exactly what to fix, and I'll fix <em>this lesson</em> so it doesn't catch you again.</p>
+
+<div class="nav">
+  <a href="0006c-tracing-the-traversal-loop.html">&larr; tracing the traversal loop</a>
+  <a href="0015-deep-vs-shallow-copy.html">next: deep vs shallow copy &rarr;</a>
+</div>
+
+<script src="../assets/stepper.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

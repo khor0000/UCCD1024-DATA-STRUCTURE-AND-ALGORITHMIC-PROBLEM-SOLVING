@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5c — Why Nodes need the heap</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 5c of the linked-list crash sequence · Lifetime vs Data Shape</div>
+<h1>Why Nodes need the heap (and why other variables don't)</h1>
+
+<p>Two separate questions often get tangled up into one: <em>"What shape is my data?"</em> vs <em>"How long does my data need to live?"</em> Getting these two separated makes <code>new</code>, <code>struct</code>, and <code>Node</code> instantly click.</p>
+
+<div class="metaphor">
+<p><span class="term">The waiter's notepad vs. the restaurant pantry.</span> When a waiter takes your order, they scribble on a notepad. Once the order reaches the kitchen, that scrap of paper is thrown in the trash — it was a temporary calculation. But the ingredients in the pantry must stay in the fridge across all shifts until customers eat them. Local variables are the scrap paper; Nodes in your list are the pantry.</p>
+</div>
+
+<h2>Two completely independent choices</h2>
+
+<p>In C++, you choose the <strong>shape</strong> of your data independently from its <strong>lifetime</strong>:</p>
+
+<table class="compare">
+<tr><th></th><th>On the Stack (temporary, dies at <code>}</code>)</th><th>On the Heap with <code>new</code> (persists until deleted)</th></tr>
+<tr><td><strong>Single primitive (e.g. <code>int</code>)</strong></td><td><code>int x = 5;</code><br><small>Loop counters, temporary sums</small></td><td><code>int *p = new int(5);</code> or <code>new int[100];</code><br><small>Dynamic arrays when size is decided at runtime</small></td></tr>
+<tr><td><strong>Bundle (e.g. <code>struct Node</code>)</strong></td><td><code>Node a;</code><br><small>Quick temporary struct inside a helper function</small></td><td><code>Node *n = new Node(10);</code><br><small>Persistent nodes in a linked list / tree</small></td></tr>
+</table>
+
+<p>Notice: <code>struct</code> does not mean "heap", and <code>int</code> does not mean "stack". A struct can live on the stack, and an int can live on the heap.</p>
+
+<h2>Why can we dispose <code>int x</code>, but must keep a <code>Node</code>?</h2>
+
+<p>Think about what each variable is doing in a real program:</p>
+
+<pre><code>void insert(int val) {
+    int pos = 1;              // temporary scratchpad — throw away when insert() finishes
+    Node *fresh = new Node(val); // persistent data — must survive so find() can read it later!
+    // attach fresh into the chain...
+}   // pos is destroyed here. fresh (the Node on the heap) survives!</code></pre>
+
+<table class="compare">
+<tr><th>Variable</th><th>Role</th><th>Lifetime needed</th></tr>
+<tr><td><code>pos</code>, <code>i</code>, <code>sum</code></td><td>Temporary calculation during this single function call</td><td>Only while the function runs</td></tr>
+<tr><td><code>Node</code> in a list</td><td>The actual data record stored in your collection</td><td>Long after <code>insert()</code> finishes, until user removes it</td></tr>
+</table>
+
+<h2>What happens if you write <code>Node a;</code> instead of <code>new</code>?</h2>
+
+<p>If you write <code>Node a;</code> inside a function like <code>insert()</code>, <code>a</code> is placed on the <strong>stack</strong>. The instant <code>insert()</code> finishes, <code>a</code> is wiped out:</p>
+
+<pre><code>void badInsert() {
+    Node a;              // lives on the STACK
+    a.item = 10;
+    head = &amp;a;           // head holds a's address
+}   // <mark class="fault">a is DESTROYED the microsecond this line hits!</mark>
+
+// Later in main():
+cout &lt;&lt; head-&gt;item;      // CRASH or GARBAGE — head points to a destroyed box!</code></pre>
+
+<p>Because each Node in a linked list is created inside an <code>insert()</code> call, it <strong>must</strong> be allocated with <code>new</code> so it stays alive in the heap after <code>insert()</code> returns.</p>
+
+<div class="note"><strong>Summary Rule:</strong> <code>struct</code> solves <em>grouping data together</em>. <code>new</code> solves <em>keeping memory alive past the function that created it</em>. We use <code>new Node</code> because list items are born inside functions but must survive across the entire program.</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — why does a Node in a linked list need <code>new</code>, while a loop counter <code>int i</code> does not?</p>
+  <button class="opt">Because a struct is too large to fit on the stack</button>
+  <button class="opt" data-correct>Because the Node must outlive the insert() function that created it</button>
+  <button class="opt">Because loop counters automatically go into the heap</button>
+  <div class="feedback good" data-feedback-good>Right — loop counters only matter while the loop runs, but a Node holds real data that other functions will need later.</div>
+  <div class="feedback bad" data-feedback-bad>Think about lifetime — when does a function finish, and does the list still need that Node afterwards?</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="heap|the heap|heap memory">
+  <p class="prompt">Second check — where does memory created by <code>new</code> live, so it survives after a function ends?</p>
+  <input type="text" placeholder="one or two words">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — the heap. Memory on the heap stays alive until you delete it.</div>
+  <div class="feedback bad" data-feedback-bad>Stack vs. ___? Which memory area does new allocate from?</div>
+</div>
+
+<p class="ask-agent">If the difference between "what data holds" (struct) and "how long it lives" (new) is clear, you're ready to chain Nodes together.</p>
+
+<div class="nav">
+  <a href="0005b-what-is-a-function.html">&larr; what is a function?</a>
+  <a href="0006-chaining-nodes.html">next: chaining Nodes &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

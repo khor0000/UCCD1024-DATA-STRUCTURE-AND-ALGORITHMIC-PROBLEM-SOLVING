@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 21 — Tracing a queue's printed output</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 21 · Queue (part 2 of 2) · Midterm Q4a</div>
+<h1>Tracing a queue's printed output</h1>
+
+<p><strong>Q4a hands you a <code>main()</code> full of <code>enqueue</code>, <code>dequeue</code> and <code>cout</code> calls and asks for the exact text it prints.</strong> You run the code by hand, keeping a running picture of the queue, and write down what each <code>cout</code> produces &mdash; in order.</p>
+
+<div class="paper-task">
+  <strong class="title">Retrieval check &bull; before reading on</strong>
+  <p>From <a href="0020-what-a-queue-is.html">Lesson 20</a>, no scrolling: which end does <code>enqueue</code> add to, which end does <code>dequeue</code> take from, and what does <code>dequeue(x)</code> do to the variable <code>x</code>?</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal</summary>
+  <p><code>enqueue</code> adds at the <strong>tail</strong> (back). <code>dequeue</code> removes from the <strong>head</strong> (front). <code>dequeue(x)</code> copies the removed item into <code>x</code> through the reference parameter &mdash; after the call, <code>x</code> holds whatever just left the front.</p>
+</details>
+
+<h2>The method &mdash; one running picture</h2>
+
+<p>Draw the queue as a row, <strong>front on the left, back on the right</strong>. Walk the code top to bottom. For each line:</p>
+
+<ol>
+<li><code>q.enqueue(v);</code> &mdash; write <code>v</code> at the <strong>right</strong> end.</li>
+<li><code>q.dequeue(x);</code> &mdash; cross off the <strong>left</strong>-most value; that value is now in <code>x</code>.</li>
+<li><code>cout &lt;&lt; ...;</code> &mdash; write down exactly what it prints, then carry on.</li>
+</ol>
+
+<p>The queue picture is your working; the list of <code>cout</code> outputs, in order, is your answer.</p>
+
+<h2>Worked example</h2>
+
+<pre><code>Queue q;
+int x = 99;
+
+q.enqueue(3);
+q.enqueue(7);
+q.enqueue(1);
+q.dequeue(x);   cout &lt;&lt; x &lt;&lt; " ";
+q.enqueue(5);
+q.dequeue(x);   cout &lt;&lt; x &lt;&lt; " ";
+cout &lt;&lt; q.size() &lt;&lt; " ";
+q.dequeue(x);   cout &lt;&lt; x;</code></pre>
+
+<table>
+  <thead><tr><th>Line</th><th>Queue (front &rarr; back)</th><th><code>x</code></th><th>Prints</th></tr></thead>
+  <tbody>
+    <tr><td><code>enqueue(3)</code></td><td>3</td><td>99</td><td>&mdash;</td></tr>
+    <tr><td><code>enqueue(7)</code></td><td>3 &nbsp; 7</td><td>99</td><td>&mdash;</td></tr>
+    <tr><td><code>enqueue(1)</code></td><td>3 &nbsp; 7 &nbsp; 1</td><td>99</td><td>&mdash;</td></tr>
+    <tr><td><code>dequeue(x)</code> &rarr; <code>cout</code></td><td>7 &nbsp; 1</td><td><strong>3</strong></td><td><code>3&nbsp;</code></td></tr>
+    <tr><td><code>enqueue(5)</code></td><td>7 &nbsp; 1 &nbsp; 5</td><td>3</td><td>&mdash;</td></tr>
+    <tr><td><code>dequeue(x)</code> &rarr; <code>cout</code></td><td>1 &nbsp; 5</td><td><strong>7</strong></td><td><code>7&nbsp;</code></td></tr>
+    <tr><td><code>cout &lt;&lt; q.size()</code></td><td>1 &nbsp; 5</td><td>7</td><td><code>2&nbsp;</code></td></tr>
+    <tr><td><code>dequeue(x)</code> &rarr; <code>cout</code></td><td>5</td><td><strong>1</strong></td><td><code>1</code></td></tr>
+  </tbody>
+</table>
+
+<p>Output, reading the last column top to bottom: <code>3 7 2 1</code></p>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; <code>dequeue</code> On An Empty Queue Does Nothing To <code>x</code></strong>
+  <p>Look at <code>Queue::dequeue</code>: <code>if (empty()) return false;</code> is the <em>first</em> line. If the queue is empty it returns immediately &mdash; it never reaches <code>itemExtracted = head-&gt;item;</code>. So <code>x</code> keeps <strong>whatever value it already had</strong>. A <code>cout &lt;&lt; x;</code> right after prints that stale value, not a new one.</p>
+  <pre><code>Queue q;
+int x = 0;
+q.enqueue(8);
+q.dequeue(x);   cout &lt;&lt; x &lt;&lt; " ";   // x = 8   -> prints "8 "
+q.dequeue(x);   cout &lt;&lt; x &lt;&lt; " ";   // queue EMPTY: x stays 8 -> prints "8 "</code></pre>
+  <p>Output: <code>8 8</code> &mdash; not <code>8 0</code>, and not an error.</p>
+  <table>
+    <thead><tr><th>Correct reading</th><th>Wrong reading</th></tr></thead>
+    <tbody><tr>
+      <td>empty <code>dequeue</code> &rarr; <code>x</code> unchanged, prints the old value</td>
+      <td>empty <code>dequeue</code> &rarr; <code>x</code> becomes 0 / NULL / errors</td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div class="note"><strong>FIFO, every time.</strong> <code>dequeue</code> <em>always</em> takes the value that has been in the queue longest &mdash; the left end of your row. It never takes the most recent one. If you find yourself removing from the right, you are tracing a <strong>stack</strong>, and every answer will be reversed.</div>
+
+<div class="quiz short" data-quiz-short data-answer="8|eight">
+  <p class="prompt">Queue holds <code>4 &rarr; 8 &rarr; 15</code> (4 at the front). <code>dequeue(x)</code> is called <strong>twice</strong>. What is <code>x</code> afterwards?</p>
+  <input type="text" placeholder="a number">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Right &mdash; first call takes 4, second takes 8. x holds 8, queue is now just 15.</div>
+  <div class="feedback bad" data-feedback-bad>Each <code>dequeue</code> takes from the front. First 4 leaves, then 8 leaves. What is in x after the second?</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="false|no|f">
+  <p class="prompt">True or false: calling <code>dequeue(x)</code> on an empty queue sets <code>x</code> to 0.</p>
+  <input type="text" placeholder="true or false?">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>False &mdash; it returns <code>false</code> before touching <code>x</code>. <code>x</code> keeps its previous value.</div>
+  <div class="feedback bad" data-feedback-bad>Re-read <code>dequeue</code>: <code>if (empty()) return false;</code> is the first line. Does it ever reach the line that writes <code>x</code>?</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book</strong>
+  <p>Trace this and write the <strong>exact</strong> output. Use the running-picture method &mdash; show your queue row at each step.</p>
+<pre><code>Queue q;
+int a = 5;
+
+q.enqueue(2);
+q.enqueue(9);
+q.enqueue(4);
+q.dequeue(a);   cout &lt;&lt; a &lt;&lt; " ";
+q.enqueue(6);
+q.dequeue(a);   cout &lt;&lt; a &lt;&lt; " ";
+q.dequeue(a);   cout &lt;&lt; a &lt;&lt; " ";
+q.dequeue(a);   cout &lt;&lt; a &lt;&lt; " ";
+q.dequeue(a);   cout &lt;&lt; a;</code></pre>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+  <table>
+    <thead><tr><th>Line</th><th>Queue</th><th><code>a</code></th><th>Prints</th></tr></thead>
+    <tbody>
+      <tr><td><code>enqueue(2)</code></td><td>2</td><td>5</td><td>&mdash;</td></tr>
+      <tr><td><code>enqueue(9)</code></td><td>2 &nbsp; 9</td><td>5</td><td>&mdash;</td></tr>
+      <tr><td><code>enqueue(4)</code></td><td>2 &nbsp; 9 &nbsp; 4</td><td>5</td><td>&mdash;</td></tr>
+      <tr><td><code>dequeue(a)</code></td><td>9 &nbsp; 4</td><td>2</td><td><code>2&nbsp;</code></td></tr>
+      <tr><td><code>enqueue(6)</code></td><td>9 &nbsp; 4 &nbsp; 6</td><td>2</td><td>&mdash;</td></tr>
+      <tr><td><code>dequeue(a)</code></td><td>4 &nbsp; 6</td><td>9</td><td><code>9&nbsp;</code></td></tr>
+      <tr><td><code>dequeue(a)</code></td><td>6</td><td>4</td><td><code>4&nbsp;</code></td></tr>
+      <tr><td><code>dequeue(a)</code></td><td><em>(empty)</em></td><td>6</td><td><code>6&nbsp;</code></td></tr>
+      <tr><td><code>dequeue(a)</code></td><td><em>(empty)</em></td><td>6 &mdash; unchanged, queue was already empty</td><td><code>6</code></td></tr>
+    </tbody>
+  </table>
+  <p>Output: <code>2 9 4 6 6</code></p>
+  <p>The last two lines are the trap: the fourth <code>dequeue</code> empties the queue and puts 6 in <code>a</code>; the fifth <code>dequeue</code> runs on an empty queue, returns <code>false</code>, and leaves <code>a</code> as 6.</p>
+</details>
+
+<p class="ask-agent">Ask your tutor for another queue trace if the empty-<code>dequeue</code> rule has not stuck &mdash; it is the single most common Q4a mistake. Next in the plan: drawing a BST and its traversals.</p>
+
+<div class="nav">
+  <a href="0020-what-a-queue-is.html">&larr; what a queue is</a>
+  <a href="0022-draw-a-bst.html">next: draw a BST &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

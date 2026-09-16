@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3 — Pointers to structs</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 3 of the linked-list crash sequence · Pointers + structs</div>
+<h1>Pointers to structs</h1>
+
+<p>Lesson 1: a pointer holds an address. Lesson 2: a struct is a bundle of fields you reach with a dot. Now combine them — instead of a pointer to an <code>int</code>, make a pointer to a whole <em>card</em>.</p>
+
+<div class="metaphor">
+<p><span class="term">Back to the ID card.</span> Say Alex's card is sitting in a filing cabinet drawer. Instead of carrying the whole card around, someone hands you a sticky note: "Alex's card is in drawer 104." That sticky note is a pointer to the struct — not the card itself, just where to find it.</p>
+</div>
+
+<pre><code>struct Student { string name; int mark; };
+
+Student a;
+a.name = "Alex";
+a.mark = 88;
+
+Student *sp = &amp;a;   // sp holds the address of a — the sticky note
+
+cout &lt;&lt; sp-&gt;name;    // Alex
+cout &lt;&lt; sp-&gt;mark;    // 88</code></pre>
+
+<p><code>sp-&gt;name</code> means "follow sp to the card it points at, then read the Name field." It's doing two things in one symbol: dereference (follow the pointer) <em>and</em> access a field. You could write it the long way and get the exact same answer:</p>
+
+<pre><code>cout &lt;&lt; (*sp).name;   // identical to sp-&gt;name — just uglier</code></pre>
+
+<h2>Dot vs. arrow</h2>
+
+<table>
+<thead><tr><th></th><th>You're holding</th><th>To read a field</th></tr></thead>
+<tbody>
+<tr><td>Dot</td><td>the struct itself</td><td><code>a.mark</code></td></tr>
+<tr><td>Arrow</td><td>a pointer to the struct</td><td><code>sp-&gt;mark</code>  (short for <code>(*sp).mark</code>)</td></tr>
+</tbody>
+</table>
+
+<div class="note">This is the single most useful rule for reading <code>List</code>/<code>Node</code> code fast: look at the variable's declared type. If it says <code>Node</code>, it's a dot. If it says <code>Node *</code>, it's an arrow. The code never mixes them up — if you see a dot where you expected an arrow, that's either a bug or you misread the type.</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — <code>Student *sp = &amp;a;</code>. Which reads a's mark through sp?</p>
+  <button class="opt">sp.mark</button>
+  <button class="opt" data-correct>sp-&gt;mark</button>
+  <button class="opt">*sp.mark</button>
+  <div class="feedback good" data-feedback-good>Right — sp is a pointer to the struct, so it's the arrow.</div>
+  <div class="feedback bad" data-feedback-bad>sp's declared type is <code>Student *</code> — a pointer — so dot alone doesn't work here; it needs the arrow (or the clunkier <code>(*sp).mark</code>).</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="(*sp).mark">
+  <p class="prompt">Second check — write the long-hand equivalent of <code>sp-&gt;mark</code>, using <code>*</code> and a dot.</p>
+  <input type="text" placeholder="type the expression">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — dereference first, then dot into the result.</div>
+  <div class="feedback bad" data-feedback-bad>Start from "follow sp" (that's <code>*sp</code>), wrap it in parentheses, then dot in for the field.</div>
+</div>
+
+<p class="ask-agent">Once dot-vs-arrow feels automatic, you have everything needed to understand a Node. Ask now if it doesn't yet.</p>
+
+<div class="nav">
+  <a href="0002-structs.html">&larr; structs</a>
+  <a href="0004-what-is-a-node.html">next: what is a Node &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19 — do-while</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Day 2 · Midterm Q1a — the third loop form</div>
+<h1><code>do-while</code></h1>
+
+<p><strong>A <code>do-while</code> is a <code>while</code> loop with the condition moved to the bottom. Because the check happens after the body, <em>the body always runs at least once</em> — even when the condition was false from the very start.</strong></p>
+
+<p>That last sentence is the only thing Q1a tests here. Everything else you already know.</p>
+
+<h2>The shape</h2>
+
+<pre><code>int i = 1;                    int i = 1;
+while (i &lt;= 3) {              do {
+    cout &lt;&lt; i &lt;&lt; " ";             cout &lt;&lt; i &lt;&lt; " ";
+    i++;                          i++;
+}                             } while (i &lt;= 3);
+                                              <span class="c">↑ semicolon. Required.</span></code></pre>
+
+<p>Both print <code>1 2 3</code>. With these starting values they are identical, and that is exactly why the exam does not use these starting values.</p>
+
+<div class="note">
+<p><strong>Two syntax details that cost marks on paper:</strong></p>
+<ul>
+<li><strong>The <code>;</code> after <code>while (…)</code> is required.</strong> A <code>while</code> loop must never have one; a <code>do-while</code> must always have one. This is the reverse of the habit you already have.</li>
+<li><strong>The condition is written at the bottom, but it is still the same condition.</strong> Nothing is negated. It is not "repeat until" — it is still "repeat while".</li>
+</ul>
+</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; The Semicolon After do-while</strong>
+  <p>A <code>do-while</code> <strong>must</strong> end with a semicolon after its condition. A plain <code>while</code> loop <strong>must not</strong> have one. This is the reverse of the habit you already have, which is exactly why it is missed.</p>
+  <p>A stray <code>;</code> on a normal <code>while</code> is worse than a typo — it makes the loop body empty, so the loop spins forever printing nothing.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody>
+      <tr><td><code>} while (i &lt; 5);</code></td><td><code>} while (i &lt; 5)</code></td></tr>
+      <tr><td><code>while (i &lt; 5) {</code></td><td><code>while (i &lt; 5); {</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Where the two differ — the only case the exam cares about</h2>
+
+<p>Make the condition false before the loop is ever reached:</p>
+
+<pre><code>int i = 10;                   int i = 10;
+while (i &lt; 5) {               do {
+    cout &lt;&lt; i &lt;&lt; " ";             cout &lt;&lt; i &lt;&lt; " ";
+    i++;                          i++;
+}                             } while (i &lt; 5);
+
+<span class="c">prints: nothing</span>            <span class="c">prints: 10</span></code></pre>
+
+<p><strong>The <code>while</code> prints nothing. The <code>do-while</code> prints <code>10</code>.</strong> The body ran before anyone checked whether it should have.</p>
+
+<div class="metaphor">
+<p><span class="term">Paying at the entrance versus paying at the exit.</span></p>
+<p>A <code>while</code> loop is a turnstile at the door. You show your ticket <em>before</em> you get in. Invalid ticket, you never enter the room at all.</p>
+<p>A <code>do-while</code> is a restaurant. You are seated, you eat, and the bill comes at the <em>end</em>. Even if you cannot pay, you already ate. <strong>The meal happened.</strong> Whether you come back tomorrow is what the check decides.</p>
+</div>
+
+<h2>Tracing it — one change to your table</h2>
+
+<p>Your table from <a href="0018-the-trace-table.html">lesson 18</a> works unchanged, with one difference in the order of the columns you fill:</p>
+
+<table>
+<thead><tr><th>Loop</th><th>Order per row</th><th>First row</th></tr></thead>
+<tbody>
+<tr><td><code>while</code> / <code>for</code></td><td>check condition → run body</td><td>may be the false row, printing nothing</td></tr>
+<tr><td><code>do-while</code></td><td><strong>run body → check condition</strong></td><td><strong>always runs the body</strong></td></tr>
+</tbody>
+</table>
+
+<p>Worked example:</p>
+
+<pre><code>int n = 7;
+do {
+    cout &lt;&lt; n &lt;&lt; " ";
+    n = n - 3;
+} while (n &gt; 0);</code></pre>
+
+<table>
+<thead><tr><th>Pass</th><th><code>n</code> entering body</th><th>OUTPUT</th><th><code>n</code> after body</th><th><code>n &gt; 0</code>?</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>7</td><td><code>7&nbsp;</code></td><td>4</td><td>true</td></tr>
+<tr><td>2</td><td>4</td><td><code>4&nbsp;</code></td><td>1</td><td>true</td></tr>
+<tr><td>3</td><td>1</td><td><code>1&nbsp;</code></td><td>-2</td><td><strong>false</strong> — stop</td></tr>
+</tbody>
+</table>
+
+<p>Output: <code>7 4 1</code>. Note the final row still prints — the body always completes before the condition is consulted. <strong><code>-2</code> is never printed</strong>, because the check that ended the loop happened after the printing, not before it.</p>
+
+<h2>Quick check</h2>
+
+<div class="quiz" data-quiz>
+<p class="prompt">A <code>do-while</code> loop's condition is false the very first time it is evaluated. How many times did the body run?</p>
+<button class="opt" data-correct>Exactly one time, before the check</button>
+<button class="opt">Zero times, the check blocked it</button>
+<button class="opt">Exactly two times, then it stopped</button>
+<button class="opt">It depends on the loop variable</button>
+<div class="feedback good" data-feedback-good>Correct. The condition sits at the bottom, so the body has already finished by the time it is read. A <code>do-while</code> body can never run fewer than once.</div>
+<div class="feedback bad" data-feedback-bad>Where is the condition written — above the body or below it? Which one therefore happens first?</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="5|5 ">
+<p class="prompt">Type the exact output:<br>
+<code>int k = 5;<br>
+do { cout &lt;&lt; k; k++; } while (k &lt; 3);</code></p>
+<input type="text" placeholder="type the exact output">
+<button>Check</button>
+<div class="feedback good" data-feedback-good>Yes. <code>5 &lt; 3</code> was false from the start, but the body had already printed. This is the whole point of the form.</div>
+<div class="feedback bad" data-feedback-bad>Read the loop bottom-up. Which happens first — the <code>cout</code>, or the <code>while</code>?</div>
+</div>
+
+<h2>Blank paper</h2>
+
+<p class="ask-agent"><strong>Close this file.</strong> Two tasks:</p>
+<ol>
+<li>Write a <code>do-while</code> loop that prints <code>1 2 3 4 5</code>. Get the semicolon right.</li>
+<li>Trace this one with a full table:<br>
+<code>int a = 2; do { a = a * a; cout &lt;&lt; a &lt;&lt; " "; } while (a &lt; 50);</code></li>
+</ol>
+
+<p class="ask-agent">Send the table, not just the answer. And if anything here raised a question, say so — that is a fault in this lesson and I will fix the lesson.</p>
+
+<div class="note">
+<p><strong>Primary source.</strong> <a href="https://en.cppreference.com/w/cpp/language/do">cppreference — <code>do-while</code> loop</a>. The one-line summary at the top is all you need; it states the "executes at least once" guarantee explicitly.</p>
+</div>
+
+<div class="nav">
+<a href="0018-the-trace-table.html">← 18 · The trace table</a>
+<a href="0013-draw-the-state-practice.html">13 · Draw the state →</a>
+</div>
+
+<style>
+.c { color: var(--ink-soft); }
+</style>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

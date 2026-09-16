@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5b — What is a function?</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 5b of the linked-list crash sequence · Detour: functions</div>
+<h1>What is a function?</h1>
+
+<p>A <strong>function</strong> is a named, reusable block of code. You write it once; you can run it — "call" it — as many times as you want, from wherever you want, just by writing its name followed by <code>()</code>.</p>
+
+<div class="metaphor">
+<p><span class="term">A vending machine.</span> You put coins in (that's <strong>input</strong>), the machine does something inside that you don't have to think about, and it may hand you back a snack (that's the <strong>output</strong>) — or, if it's a machine that just plays a jingle, hand you back nothing at all. Every function is a small machine like this: give it inputs, it runs its code, it may or may not hand something back.</p>
+</div>
+
+<h2>The four parts of a function</h2>
+
+<pre><code>int add(int a, int b) {
+    return a + b;
+}</code></pre>
+
+<table class="compare">
+<tr><th>Part</th><th>Here</th><th>Meaning</th></tr>
+<tr><td>return type</td><td><code>int</code></td><td>the type of thing this function hands back when it's done</td></tr>
+<tr><td>name</td><td><code>add</code></td><td>what you'll type to call this function later</td></tr>
+<tr><td>parameters</td><td><code>(int a, int b)</code></td><td>the inputs — coins you must put in every time you call it</td></tr>
+<tr><td>body</td><td><code>{ return a + b; }</code></td><td>the code that runs, every time, using whatever was put in</td></tr>
+</table>
+
+<p>To actually run it — to <strong>call</strong> it — you write its name with real values in place of the parameters:</p>
+
+<pre><code>int result = add(3, 5);   // runs the body with a=3, b=5
+cout &lt;&lt; result;           // 8</code></pre>
+
+<p><code>a</code> and <code>b</code> only exist while <code>add</code> is running. Each call gets its own fresh <code>a</code> and <code>b</code> — call <code>add(3, 5)</code> and later <code>add(10, 1)</code>, and they don't interfere with each other at all.</p>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — in <code>int add(int a, int b) { return a + b; }</code>, what does <code>(int a, int b)</code> represent?</p>
+  <button class="opt">The function's name</button>
+  <button class="opt" data-correct>The inputs the function needs every time it's called</button>
+  <button class="opt">What the function hands back when it finishes</button>
+  <div class="feedback good" data-feedback-good>Right — parameters are the inputs. What it hands back is a separate thing (the return type + the return statement).</div>
+  <div class="feedback bad" data-feedback-bad>Parentheses after the function name always hold the inputs — what you must supply every time you call it.</div>
+</div>
+
+<h2>void: a machine with no snack</h2>
+
+<p>Not every function hands something back. If a function's job is just to <em>do</em> something — print to the screen, change a value, attach one box to another — it has no output, and its return type is <code>void</code>. <code>void</code> literally means "nothing."</p>
+
+<pre><code>void greet(int times) {
+    for (int i = 0; i &lt; times; i++) {
+        cout &lt;&lt; "hi ";
+    }
+}   // no return statement needed — there's nothing to hand back
+
+greet(3);   // prints "hi hi hi ", hands nothing back</code></pre>
+
+<p>Notice: <code>greet(3)</code> is called on its own line, not assigned to anything (<code>int result = greet(3);</code> would be an error) — because there's no snack to catch.</p>
+
+<div class="quiz short" data-quiz-short data-answer="void">
+  <p class="prompt">Second check — what return type do you write for a function that only prints something and hands nothing back?</p>
+  <input type="text" placeholder="one word">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — void means "this function hands nothing back."</div>
+  <div class="feedback bad" data-feedback-bad>Look at greet above — what word sits where int sat in add's signature?</div>
+</div>
+
+<h2>Now re-read Lesson 5's example</h2>
+
+<p>Here's the exact snippet from the previous lesson, now fully readable:</p>
+
+<pre><code>void attach(Node *ptr) {
+    Node tmp;
+    tmp.item = 10;
+    ptr-&gt;next = &amp;tmp;
+}</code></pre>
+
+<table class="compare">
+<tr><th>Piece</th><th>What it is</th></tr>
+<tr><td><code>void</code></td><td>this function hands nothing back — its job is just to do something</td></tr>
+<tr><td><code>attach</code></td><td>the name — how you'd call it: <code>attach(someNode);</code></td></tr>
+<tr><td><code>(Node *ptr)</code></td><td>one input required: a pointer to a Node, stored in the local name <code>ptr</code></td></tr>
+<tr><td><code>{ ... }</code></td><td>the body — runs fresh each time, using whatever <code>ptr</code> was passed in</td></tr>
+</table>
+
+<p>Nothing about the dangling-pointer bug from Lesson 5 has changed — this is purely "here's how to read the wrapper around it."</p>
+
+<div class="note"><strong>One thing to file away, not worry about yet:</strong> later lessons will show functions written as <code>List::insert(...)</code> — that just means "this function lives inside the <code>List</code> struct," same idea as <code>attach</code> living on its own. You don't need <code>struct</code>-attached functions to understand anything on this page.</div>
+
+<p class="ask-agent">Ask if any of the four parts (return type, name, parameters, body) still feel shaky before moving on — everything from here on assumes you can read a function signature at a glance.</p>
+
+<div class="nav">
+  <a href="0005-the-new-keyword.html">&larr; the new keyword</a>
+  <a href="0005c-why-nodes-need-the-heap.html">next: why Nodes need the heap &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

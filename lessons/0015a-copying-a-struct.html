@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15a — Copying a struct with =</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 15a of the linked-list crash sequence &middot; the <code>=</code> construct</div>
+<h1>Copying a struct with <code>=</code></h1>
+
+<p><code>b = a;</code> where <code>a</code> and <code>b</code> are structs copies <strong>every field of <code>a</code> into the matching field of <code>b</code></strong>, one at a time. That is the whole rule, and it is the only new thing in this lesson.</p>
+
+<div class="metaphor">
+<p><span class="term">A form with two blanks.</span> A struct is a printed form: <code>book</code> has a blank for the title and a blank for the page count. Copying a form means photocopying it &mdash; you get a second sheet with the same words written in the same blanks. Two sheets now exist. Writing on one does not change the other.</p>
+</div>
+
+<h2>The one-number version you already know</h2>
+
+<pre><code>int x = 5;
+int y = x;      <span class="c">// y is now 5</span>
+y = 99;         <span class="c">// x is STILL 5 — two separate boxes</span></code></pre>
+
+<p>Nothing surprising: <code>y</code> is its own box, and <code>=</code> put a copy of <code>x</code>'s value into it.</p>
+
+<h2>The struct version</h2>
+
+<p>Using the <code>book</code> struct you wrote by hand in <a href="0016-assign-dont-declare-in-a-constructor.html">lesson 16</a>:</p>
+
+<pre><code>struct book {
+    string title;
+    int    pages;
+};
+
+book a("Dune", 412);
+book b = a;                <span class="c">// ← the new construct</span></code></pre>
+
+<p>That single line does exactly, and only, this:</p>
+
+<pre><code>b.title = a.title;      <span class="c">// "Dune"</span>
+b.pages = a.pages;      <span class="c">// 412</span></code></pre>
+
+<p>Field by field, in declaration order. C++ writes those two lines for you. You did not have to ask for it and there is no way to see it happen &mdash; it is silent.</p>
+
+<div class="diagram">
+  <div class="node">
+    <div class="addr">0x700</div>
+    <div class="cell"><span class="item">"Dune"</span></div>
+    <div class="addr" style="margin-top:.3rem">a.title</div>
+  </div>
+  <div class="node" style="margin-left:.4rem">
+    <div class="addr">0x708</div>
+    <div class="cell"><span class="item">412</span></div>
+    <div class="addr" style="margin-top:.3rem">a.pages</div>
+  </div>
+  <div class="node highlight" style="margin-left:2rem">
+    <div class="addr">0x720</div>
+    <div class="cell"><span class="item">"Dune"</span></div>
+    <div class="addr" style="margin-top:.3rem">b.title</div>
+  </div>
+  <div class="node highlight" style="margin-left:.4rem">
+    <div class="addr">0x728</div>
+    <div class="cell"><span class="item">412</span></div>
+    <div class="addr" style="margin-top:.3rem">b.pages</div>
+  </div>
+</div>
+
+<p>Four boxes at four different addresses. <code>b</code>'s two boxes are brand new; the <em>values</em> written inside them were copied from <code>a</code>'s. Change <code>b.pages</code> to <code>500</code> and <code>a.pages</code> stays <code>412</code>, for the same reason <code>y = 99</code> left <code>x</code> alone.</p>
+
+<div class="note">
+<p>You might reasonably wonder: <em>is <code>book b = a;</code> different from <code>book b; b = a;</code>?</em> For what the paper asks, no &mdash; both end with every field of <code>b</code> holding a copy of the matching field of <code>a</code>. Read the two forms as the same thing.</p>
+</div>
+
+<h2>Why this matters more than it looks</h2>
+
+<p>Look at that rule once more: <strong>every field, copied as-is</strong>. Nothing else. Whatever value is sitting in a field gets duplicated, and C++ does not look at what that value <em>means</em>.</p>
+
+<p>For <code>book</code> that is harmless &mdash; a title and a page count mean exactly what they say. But you have already met a struct whose field holds an <strong>address</strong>: <code>List</code>, from <a href="0007-the-list-container.html">lesson 7</a>, whose <code>head</code> field holds the address of the first node. Copy that field as-is and the new List gets the same address &mdash; which means it points at the <em>same</em> nodes, not at nodes of its own.</p>
+
+<p>That single consequence is the whole of the next lesson, and the whole of midterm Q3b. You do not need to work it out now. You only need this lesson's rule, cold.</p>
+
+<div class="quiz" data-quiz>
+<p class="prompt">Quick check &mdash; <code>book a("Dune", 412); book b = a; b.pages = 500;</code> What is <code>a.pages</code>?</p>
+<button class="opt" data-correct>412 &mdash; b's fields are separate boxes</button>
+<button class="opt">500 &mdash; b and a share the same boxes</button>
+<button class="opt">0 &mdash; the copy reset a's fields</button>
+<div class="feedback good" data-feedback-good>Right. <code>=</code> made <code>b</code> its own pair of boxes and copied the values in. Writing to one pair never touches the other.</div>
+<div class="feedback bad" data-feedback-bad>Count the boxes in the diagram above. How many separate <code>pages</code> boxes exist after the copy?</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">On paper &bull; before you move on</strong>
+  <p>Close this page. Write the two lines that C++ silently performs when it runs <code>book b = a;</code>, given <code>struct book { string title; int pages; };</code></p>
+</div>
+
+<details class="reveal">
+  <summary>reveal</summary>
+  <pre><code>b.title = a.title;
+b.pages = a.pages;</code></pre>
+  <p>Two lines, because <code>book</code> has two fields. If <code>book</code> had five fields it would be five lines. The rule scales with the number of fields, and it never reaches past them.</p>
+</details>
+
+<p class="ask-agent">Anything here that didn't land &mdash; ask me before going on to lesson 15. That lesson is built directly on this one rule, so a shaky spot here becomes a lost mark there.</p>
+
+<div class="nav">
+  <a href="0007-the-list-container.html">&larr; the List container</a>
+  <a href="0015-deep-vs-shallow-copy.html">next: deep vs shallow copy &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

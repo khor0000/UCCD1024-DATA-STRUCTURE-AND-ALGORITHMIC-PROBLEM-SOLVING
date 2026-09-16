@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9b — insert: the empty list case</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 9b of the linked-list crash sequence · Insert (part 2 of 4)</div>
+<h1>insert: the empty list case</h1>
+
+<p><code>insert</code> handles three different situations, because "put a new box at position <code>at</code>" means something different depending on what's already there. This lesson is the simplest of the three: the list has nothing in it yet.</p>
+
+<pre><code>bool List::insert(int at, int newItem) {
+    Node *pre, *cur, *tmp = new Node(newItem);
+
+    if (at &lt; 1 || at &gt; count+1) return false;  // legal range — Lesson 9
+    if (!tmp) return false;                     // did "new" actually succeed?
+
+    if (empty()) {                              // ← this lesson
+        head = tmp;
+        count++;
+        return true;
+    }
+    // every other case — next lessons
+}</code></pre>
+
+<div class="note"><strong>Three new things showed up in that block at once — none of them are today's topic, so here's each in one line before moving on:</strong>
+<table>
+<thead><tr><th>New thing</th><th>What it means</th></tr></thead>
+<tbody>
+<tr><td><code>Node *pre, *cur, *tmp = new Node(...);</code></td><td>Three separate pointer declarations, squeezed onto one line — each name needs its own <code>*</code>, and only <code>tmp</code> gets a starting value right now. It's exactly the same as writing three lines: <code>Node *pre; Node *cur; Node *tmp = new Node(...);</code>. <code>pre</code> and <code>cur</code> exist as empty boxes, reserved for the next two lessons — ignore them entirely today.</td></tr>
+<tr><td><code>if (!tmp)</code></td><td>A pointer can be tested directly in an <code>if</code>: non-<code>NULL</code> counts as true, <code>NULL</code> counts as false. So <code>!tmp</code> means "<code>tmp</code> is <code>NULL</code>" — i.e. "the <code>new</code> above failed to get memory." This almost never actually happens on this course; it's defensive code. Skim it and move on.</td></tr>
+<tr><td><code>empty()</code></td><td>A member function of <code>List</code> (like <code>find</code>), called with no arguments. Its entire body, in full:</td></tr>
+</tbody>
+</table>
+<pre><code>bool List::empty() {
+    return count == 0;
+}</code></pre>
+<p>That's it — one line. It reads <code>count</code> (the same field you already know from Lesson 7) and hands back <code>true</code> or <code>false</code> depending on whether it's zero. <code>if (empty())</code> in the code above is exactly the same question as writing <code>if (count == 0)</code> directly — <code>empty()</code> is just a shorter, more readable name for that one check.</p>
+<p>The only line that's actually today's lesson is inside the <code>if (empty())</code> block. Everything above it is context to make the function read correctly; none of it needs to be memorised today.</p>
+</div>
+
+<h2>There's no chain yet</h2>
+
+<p>If <code>head</code> is <code>NULL</code>, there is no existing chain yet. There is nothing for the new node to attach to. So its <code>next</code> stays exactly as it was — already <code>NULL</code>, set back in Lesson 6f's constructor, before <code>insert</code> ever ran. The new node doesn't join a list. It simply <em>becomes</em> the whole list:</p>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="cell"><span class="item">5</span><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">head (was NULL, now points here)</div>
+  </div>
+</div>
+
+<p><code>head = tmp;</code> copies <code>tmp</code>'s address into <code>head</code> — nothing more. <code>head</code> is the <em>only</em> way anything ever reaches the list, so once it points at nothing but this one node, walking from <code>head</code> can only ever find this one node. That's what "the new node becomes the whole list" actually means — it's the consequence of that one copy, not a separate thing that happens. Then <code>count++;</code> brings the count from 0 to 1, and the function returns <code>true</code>.</p>
+
+<div class="note">This case only ever touches one variable: <code>head</code>. That's what makes it the simplest of the three.</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; The Semicolon On count++</strong>
+  <p><code>++</code> is an operator, not a statement terminator. <code>count++</code> is a complete <em>expression</em> but not a complete <em>statement</em> until a <code>;</code> closes it &mdash; exactly like <code>x = 5</code> needs its <code>;</code>. It reads as finished because <code>++</code> looks like punctuation; it isn't.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>count++;</code></td>
+      <td><code>count++</code></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — inserting into an empty list, why is tmp's next cell already correct, with nothing in this case setting it?</p>
+  <button class="opt">It's a bug — this case is missing a line</button>
+  <button class="opt" data-correct>Node's constructor already set next = NULL when tmp was created</button>
+  <button class="opt">Empty lists don't use next at all</button>
+  <div class="feedback good" data-feedback-good>Right — every node comes out of new Node(...) with next already NULL, from Lesson 6f's constructor. There's nothing left to do here.</div>
+  <div class="feedback bad" data-feedback-bad>Think back to Lesson 6f: both of Node's constructors set next = NULL as part of creating the node, before insert ever touches it.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="head = tmp|head=tmp|head = tmp;|head=tmp;">
+  <p class="prompt">Second check — type the exact one line (spacing aside) that copies tmp's address into head.</p>
+  <input type="text" placeholder="one line of code">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — head = tmp. That's the entire case.</div>
+  <div class="feedback bad" data-feedback-bad>Look at the code block above — inside the if (empty()) block, before count++.</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book</strong>
+  <p>Close this page. On paper, write the full <code>if (empty()) { ... }</code> branch of <code>insert</code>. Then say in one sentence why this branch never sets <code>tmp-&gt;next</code>.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+  <pre><code>if (empty()) {
+    head = tmp;
+    count++;
+    return true;
+}</code></pre>
+  <p><code>tmp-&gt;next</code> is already <code>NULL</code> from <code>Node</code>'s constructor (Lesson 6f), and an empty list has no existing chain to point at &mdash; so it is already correct with nothing to do.</p>
+</details>
+
+<p class="ask-agent">Next: inserting at position 1 when the list already has nodes in it — now there's an existing chain to preserve.</p>
+
+<div class="nav">
+  <a href="0009-insert-legal-range.html">&larr; where can you insert?</a>
+  <a href="0009c-insert-position-one.html">next: insert — position 1, non-empty &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

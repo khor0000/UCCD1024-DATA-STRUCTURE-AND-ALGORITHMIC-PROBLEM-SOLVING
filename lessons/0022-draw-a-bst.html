@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 22 — Build a BST from an insertion list</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 22 · Binary Search Tree, part 1 of 2 · Midterm Q4d</div>
+<h1>Build a BST from an insertion list</h1>
+
+<p><strong>Q4d gives you a list of items and asks you to draw the binary search tree built by inserting them in that order.</strong> It's mechanical: one comparison rule, applied at every node, decides where each new item lands.</p>
+
+<div class="paper-task">
+  <strong class="title">Retrieval check &bull; before reading on</strong>
+  <p>From <a href="0021-tracing-queue-output.html">Lesson 21</a>: when <code>dequeue(x)</code> is called on an empty queue, what happens to <code>x</code>?</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal</summary>
+  <p>Nothing. <code>dequeue</code> returns <code>false</code> on its first line and never touches <code>x</code> &mdash; <code>x</code> keeps its previous value.</p>
+</details>
+
+<h2>The rule</h2>
+
+<p>A BST node holds an <code>item</code> and two child pointers, <code>left</code> and <code>right</code> &mdash; same shape as a queue's <code>Node</code>, just two links instead of one, and this course's exam trees are built on <code>int</code> items:</p>
+
+<pre><code>struct BTNode {
+    int     item;
+    BTNode *left, *right;
+    BTNode(int);
+};</code></pre>
+
+<p>The very first item becomes the <strong>root</strong>. For every item after that, start at the root and walk down, comparing at each node:</p>
+
+<pre><code>if (cur-&gt;item &gt; newItem)   go LEFT      // new item is SMALLER than this node
+else                       go RIGHT     // new item is BIGGER (or equal)</code></pre>
+
+<p>Keep walking that way until you reach a <code>NULL</code> child slot &mdash; drop the new node there.</p>
+
+<div class="metaphor">
+<p><span class="term">A bouncer at every fork.</span> You arrive at a node holding <code>40</code>. The bouncer asks: &ldquo;Is your number smaller than <code>40</code>?&rdquo; Smaller &rarr; take the left corridor. <code>40</code> or bigger &rarr; take the right corridor. You meet another bouncer, answer again, and keep going until a corridor has no door yet &mdash; that empty doorway is your seat.</p>
+</div>
+
+<h3>Worked example: insert <code>40 20 50 10 30 45 60</code></h3>
+
+<table>
+  <thead><tr><th>Insert</th><th>Walk</th><th>Lands</th></tr></thead>
+  <tbody>
+    <tr><td><code>40</code></td><td>&mdash;</td><td>root</td></tr>
+    <tr><td><code>20</code></td><td>at 40: 20 &lt; 40 &rarr; left (empty)</td><td>40.left</td></tr>
+    <tr><td><code>50</code></td><td>at 40: 50 &gt; 40 &rarr; right (empty)</td><td>40.right</td></tr>
+    <tr><td><code>10</code></td><td>at 40: left &rarr; at 20: 10 &lt; 20 &rarr; left (empty)</td><td>20.left</td></tr>
+    <tr><td><code>30</code></td><td>at 40: left &rarr; at 20: 30 &gt; 20 &rarr; right (empty)</td><td>20.right</td></tr>
+    <tr><td><code>45</code></td><td>at 40: right &rarr; at 50: 45 &lt; 50 &rarr; left (empty)</td><td>50.left</td></tr>
+    <tr><td><code>60</code></td><td>at 40: right &rarr; at 50: 60 &gt; 50 &rarr; right (empty)</td><td>50.right</td></tr>
+  </tbody>
+</table>
+
+<p>The tree:</p>
+
+<pre><code>          40
+        /    \
+      20      50
+     /  \    /  \
+   10    30 45   60</code></pre>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Comparison Backwards</strong>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody>
+      <tr><td><code>cur-&gt;item &gt; newItem</code> &rarr; go left (smaller = left)</td><td>sending the smaller item right, or vice versa</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="left|the left|go left">
+  <p class="prompt">You are inserting <code>15</code> and you reach a node holding <code>60</code>. Which way do you go?</p>
+  <input type="text" placeholder="left or right?">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Right &mdash; 15 is smaller than 60, and <code>cur-&gt;item &gt; newItem</code> (60 &gt; 15) means go left.</div>
+  <div class="feedback bad" data-feedback-bad><code>cur-&gt;item &gt; newItem</code> is true here (60 &gt; 15), and that branch goes left. Smaller items go left.</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book</strong>
+  <p>Insert this list into an empty BST, in this order: <code>50 &nbsp; 30 &nbsp; 70 &nbsp; 20 &nbsp; 40 &nbsp; 60 &nbsp; 80</code></p>
+  <p>Just draw the tree &mdash; boxes or circles, left/right children. Traversals are the next lesson.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+<pre><code>          50
+        /    \
+      30      70
+     /  \    /  \
+   20    40 60   80</code></pre>
+</details>
+
+<p>Reading three different outputs off this same tree &mdash; pre-order, in-order, post-order &mdash; is a separate skill: <a href="0023-bst-traversals.html">Lesson 23</a>.</p>
+
+<div class="nav">
+  <a href="0021-tracing-queue-output.html">&larr; tracing queue output</a>
+  <a href="0023-bst-traversals.html">reading traversals &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

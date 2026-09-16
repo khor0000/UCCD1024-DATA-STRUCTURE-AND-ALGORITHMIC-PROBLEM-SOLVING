@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6g — Which constructor, vs. when</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 6g of the linked-list crash sequence · Structs, part 5</div>
+<h1>Which constructor runs, vs. when it runs</h1>
+
+<p>Last lesson said a constructor runs <strong>automatically</strong>, then immediately showed you a table where <em>you</em> pick which of two constructors fires. Can both be true?</p>
+
+<p><strong>Can you decide <em>when</em> the constructor runs? No.</strong><br>
+<strong>Can you decide <em>which</em> constructor runs? Yes.</strong></p>
+
+<p>Those are two different questions, with two different answers. The lesson never separated them — here's the split.</p>
+
+<h2>"When" is not up for negotiation</h2>
+
+<p>An ordinary member function is called on its own line, whenever you feel like it:</p>
+
+<pre><code>Node n1;        // create it — line 1
+n1.passed();     // call a function on it — line 2, separate moment
+n1.passed();     // call it again — allowed, no limit</code></pre>
+
+<p>A constructor doesn't get that second line. There is no <code>n1.Node(10);</code> you write afterward — try it and it won't compile. Writing <code>new Node(10)</code> <em>is</em> the trigger; there's no separate "now construct it" step for you to place earlier or later, and no way to fire it a second time. That's the whole content of "automatic": construction is welded to the creation line, not scheduled by you.</p>
+
+<h2>"Which" is entirely up to you</h2>
+
+<p><code>Node</code> declares two functions that happen to share the name <code>Node</code>:</p>
+
+<pre><code>Node(int newItem);   // one parameter
+Node();               // zero parameters</code></pre>
+
+<p>Two functions allowed to share one name, distinguished only by their parameter list, is called <strong>overloading</strong> — it works for constructors and for ordinary functions alike. The compiler looks at what you typed and counts/matches the arguments: <code>new Node(10)</code> has one <code>int</code> argument, so it's an exact match for <code>Node(int)</code>; <code>new Node</code> supplies none, so it matches <code>Node()</code>. That match is decided the instant the compiler reads your line — nothing runtime, nothing dynamic. You chose the constructor the moment you chose what to type.</p>
+
+<div class="metaphor">
+<p><span class="term">A vending machine.</span> Press B4, and the machine dispenses immediately — there's no separate "go" button after B4; pressing the button <em>is</em> the trigger, and it fires exactly once. That's "when," and it's fixed by the machine, not you. But B4 gives you chips and C2 gives you a soda — <em>which</em> item comes out is entirely decided by which button your finger picked. Same machine, same instant-dispense behavior, different result depending on your choice of button. <code>new Node(10)</code> and <code>new Node</code> are two different buttons on the same machine.</p>
+</div>
+
+<div class="note">This is why the table in Lesson 6f had a "which constructor runs" column but never a "when" column — <em>when</em> is identical for every row: automatically, at <code>new</code>, exactly once. Only <em>which</em> changes, and it changes because the argument list you wrote changes.</div>
+
+<h2>Put together</h2>
+
+<table>
+<thead><tr><th></th><th>When it fires</th><th>Which one fires</th></tr></thead>
+<tbody>
+<tr><td>Decided by</td><td>the language — always at creation, always exactly once</td><td>you — via the argument list you write</td></tr>
+<tr><td>Can you change it?</td><td>No — no early call, no re-call, no skipping it</td><td>Yes — write <code>(10)</code> for one, nothing for the other</td></tr>
+</tbody>
+</table>
+
+<p>So the original sentence still holds exactly as written: the constructor runs automatically, once, at creation. "Automatic" was only ever a claim about <em>when</em>. It was never a claim that you have no say in the matter at all — you still pick <em>which</em> recipe that automatic, unskippable moment follows, by what you write to the right of <code>new</code>.</p>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — <code>Node</code> has <code>Node(int)</code> and <code>Node()</code>. What decides which one runs for a given <code>new</code> expression?</p>
+  <button class="opt" data-correct>The argument list you write, matched against each constructor's parameter list</button>
+  <button class="opt">Whichever constructor is declared first inside the struct</button>
+  <button class="opt">You call the one you want by name, separately, after <code>new</code></button>
+  <div class="feedback good" data-feedback-good>Right — the compiler matches your argument list to a parameter list at the moment it reads your <code>new</code> line. Declaration order and a separate call don't come into it.</div>
+  <div class="feedback bad" data-feedback-bad>Look at what changes between <code>new Node(10)</code> and <code>new Node</code> in the table above — it's the argument list, not the order the constructors were declared in, and there's no separate call line for either.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="no|no.">
+  <p class="prompt">Second check — one word (yes/no): can you write code that runs <code>Node::Node(int)</code> a second time on a <code>Node</code> that already exists?</p>
+  <input type="text" placeholder="one word">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>No — a constructor only ever runs at the creation instant. "Which" is your choice; "again, later, on demand" is not on offer at all.</div>
+  <div class="feedback bad" data-feedback-bad>Re-read "When is not up for negotiation" above — <code>n1.Node(10);</code> doesn't compile. There's no line of code that re-triggers a constructor on an existing variable.</div>
+</div>
+
+<p class="ask-agent">Any part of "when" vs "which" still feel shaky — ask before moving on. Otherwise, next lesson finally introduces <code>List</code> itself.</p>
+
+<div class="nav">
+  <a href="0006f-the-constructor.html">&larr; the constructor</a>
+  <a href="0007-the-list-container.html">next: the List container &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

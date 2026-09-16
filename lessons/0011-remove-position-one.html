@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11 — remove: position 1</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 11 of the linked-list crash sequence · Remove (part 1 of 2)</div>
+<h1>remove: position 1</h1>
+
+<div class="paper-task">
+  <strong class="title">Retrieval check &bull; before reading on</strong>
+  <p>From memory, no scrolling: in the general-case <em>insert</em>, which single line is the "save"? And once that line has run, can the other two relinking lines go in either order?</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal</summary>
+  <p><code>cur = pre-&gt;next;</code> is the save. Once it has run, <code>tmp-&gt;next = cur;</code> and <code>pre-&gt;next = tmp;</code> can run in either order &mdash; the address they both need is already safe in <code>cur</code>.</p>
+</details>
+
+<h2>The whole shape of remove, before any code</h2>
+
+<p><code>remove(from)</code> is <code>insert</code> run backwards: instead of splicing a node in, you splice one out. It does four things, always in this order:</p>
+
+<ol>
+<li><strong>Check the request is real.</strong> <code>from</code> must name a position that already exists &mdash; 1 to <code>count</code>.</li>
+<li><strong>Walk to the node just before the target</strong> &mdash; unless the target is position 1, which has no "before". That is this lesson.</li>
+<li><strong>Re-route.</strong> The node before the target points <em>past</em> it, to whatever came after.</li>
+<li><strong>Hand the memory back</strong> with <code>free()</code> &mdash; after saving anything you still need from the doomed node.</li>
+</ol>
+
+<p>This lesson is steps 2&ndash;4 for the <strong>position-1 case only</strong>, where "re-route" just means moving <code>head</code> forward one node.</p>
+
+<pre><code>bool List::remove(int from) {
+    Node *pre, *cur;
+
+    if (from &lt; 1 || from &gt; count) return false;   // is the position real?
+
+    if (from == 1) {                              // ← this lesson
+        cur = head;         // save the doomed node's address
+        head = head-&gt;next;  // head skips over it
+        count--;
+        free(cur);          // hand its memory back
+        return true;
+    }
+    // every other position — next lesson
+}</code></pre>
+
+<div class="metaphor">
+<p><span class="term">Unhooking the first carriage.</span> To take the front carriage off a train, you first note which carriage is behind it, uncouple, and let the second carriage become the new front. Only then do you haul the old front carriage away &mdash; if you scrapped it while it was still coupled, you would lose the rest of the train with it.</p>
+</div>
+
+<h2>Why the guard is <code>&gt; count</code>, not <code>&gt; count+1</code></h2>
+
+<p><code>insert</code>'s guard allowed <code>at</code> up to <code>count+1</code>, because appending one past the end is a real, legal insert. <code>remove</code> has no equivalent &mdash; you can only remove a node that already exists, so its upper bound is plain <code>count</code>. Same-looking guard, one fewer, for a real reason.</p>
+
+<h2>Tracing the position-1 case, address by address</h2>
+
+<p>List <code>10 &rarr; 20 &rarr; 30</code>. <code>head</code> (its own address <code>0x900</code>) holds <code>0x500</code>. Step through the three pointer lines:</p>
+
+<div class="stepper" data-stepper>
+  <script type="application/json">
+  {
+    "code": [
+      "cur = head;",
+      "head = head->next;",
+      "free(cur);          // count-- happened just before"
+    ],
+    "stages": [
+      { "line": -1, "caption": "Before any line runs. head holds 0x500 (node 10).",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 0, "copy": {"from":"ptr:head","to":"ptr:cur"}, "caption": "cur = head copies head's value (0x500) into a new pointer cur. Node 10's address is now held in two places — head and cur.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"cur","addr":"0x908","val":"0x500"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 1, "copy": {"from":"node:0x500.next","to":"ptr:head"}, "caption": "head = head->next reads node 10's next cell (0x520) and stores it in head. head now points at node 20. Node 10 is reachable ONLY through cur now.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x520"}, {"name":"cur","addr":"0x908","val":"0x500"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520","note":"only cur reaches it"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 2, "caption": "free(cur) hands node 10's memory back — the box is gone. cur still holds 0x500 as a value, but that address is no longer yours: cur is now a dangling pointer. The function does nothing more with it. List is 20 -> 30, count 2.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x520"}, {"name":"cur","addr":"0x908","val":"0x500","note":"dangling — freed address"} ],
+        "nodes": [ {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] }
+    ]
+  }
+  </script>
+</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Save The Node Before Moving head</strong>
+  <p><code>cur = head;</code> must run <em>before</em> <code>head = head-&gt;next;</code>. <code>head</code> is the only pointer to the node being removed; once <code>head</code> moves, that node is unreachable and cannot be freed. Move <code>head</code> first and <code>free(head)</code> then frees the <strong>survivor</strong> &mdash; the node that should stay &mdash; and the real target leaks.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>cur = head;</code><br><code>head = head-&gt;next;</code><br><code>count--;</code><br><code>free(cur);</code></td>
+      <td><code>head = head-&gt;next;</code><br><code>count--;</code><br><code>free(head);</code> <span style="opacity:.6">// frees node 20</span></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div class="note"><strong>Dangling pointer.</strong> After <code>free(cur)</code>, <code>cur</code> still holds an address but that memory is no longer yours. Reading or writing through it is a "use after free" bug. The fix is not to avoid <code>cur</code> forever &mdash; it is to never touch it again after the <code>free</code>, which is exactly what this function does: <code>free(cur); return true;</code>.</div>
+
+<div class="note"><strong>Why <code>free</code> and not <code>delete</code>?</strong> Strictly, C++ pairs <code>new</code> with <code>delete</code>. This course's <code>List.cpp</code> genuinely uses <code>free()</code>, so that is what to expect on the paper. Read <code>free(cur)</code> as "hand this node's memory back"; a marker would accept <code>delete cur;</code> in the same spot.</div>
+
+<div class="quiz short" data-quiz-short data-answer="dangling pointer|dangling|use after free">
+  <p class="prompt">Quick check — two words: what is <code>cur</code> called right after <code>free(cur)</code>, still holding an address it no longer owns?</p>
+  <input type="text" placeholder="a two-word term">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — a dangling pointer. Touching it after the free is "use after free".</div>
+  <div class="feedback bad" data-feedback-bad>The note above the quiz names it in bold.</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book</strong>
+  <p>Close this page. On paper, write the full <code>if (from == 1) { ... }</code> branch of <code>remove</code> &mdash; five lines, in order. Then say which line is the "save", and why it must run before <code>head = head-&gt;next;</code>.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+  <pre><code>if (from == 1) {
+    cur = head;
+    head = head-&gt;next;
+    count--;
+    free(cur);
+    return true;
+}</code></pre>
+  <p><code>cur = head;</code> is the save. <code>head</code> is the only pointer to the node being removed; once <code>head = head-&gt;next;</code> runs, that node is unreachable and there is nothing left to hand to <code>free()</code>. Same rule as <a href="0010b-save-before-overwrite.html">Lesson 10b</a>: save the address before you overwrite where it lives.</p>
+</details>
+
+<p class="ask-agent">Ask your tutor for a variant if the free-order trap hasn't stuck. Next: removing from anywhere else &mdash; one more pointer than this.</p>
+
+<div class="nav">
+  <a href="0010b-save-before-overwrite.html">&larr; save before you overwrite</a>
+  <a href="0012-remove-general-case.html">next: remove — the general case &rarr;</a>
+</div>
+
+<script src="../assets/stepper.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

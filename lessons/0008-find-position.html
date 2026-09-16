@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8 — find(position)</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 8 of the linked-list crash sequence · Traversal</div>
+<h1>find(position)</h1>
+
+<p><code>find</code> answers one question: "give me a pointer to the Node sitting at position <em>n</em>." Every other List operation — <code>get</code>, <code>set</code>, <code>insert</code>, <code>remove</code> — is built on top of calling <code>find</code> first. Get this one solid and the rest of the operations stop feeling like separate things to memorize.</p>
+
+<div class="metaphor">
+<p><span class="term">Back to the treasure hunt.</span> Someone asks you for "stop number 3." You don't teleport there — you start at stop 1 (<code>head</code>) and walk forward, stop by stop, counting as you go, until you've taken enough steps to be standing at stop 3.</p>
+</div>
+
+<p>The exact code (Lecture 4):</p>
+
+<pre><code>Node *List::find(int position) {
+    Node *cur;
+
+    if (position &gt; count) return NULL;
+    cur = head;
+    for (int count=1; count&lt;position; count++)
+        cur = cur-&gt;next;
+    return cur;
+}</code></pre>
+
+<div class="note">
+<p><strong>You might reasonably wonder: where does <code>count</code> come from on line 4, <code>if (position &gt; count)</code>? It isn't declared anywhere above it.</strong> Look at the function's full name: <code>Node *List::find(int position)</code>. The <code>List::</code> means this function runs <em>as a member of</em> a specific <code>List</code> object — and a member function gets silent, automatic access to every field of its own object. No dot, no <code>this-&gt;</code>, nothing written. <code>count</code> on line 4 means "the <code>count</code> field belonging to whichever <code>List</code> this call is running on." That's the same <code>count</code> you'd see written as <code>list.count</code> from outside the struct.</p>
+<p>Now look at the <code>for</code> loop below it: <code>int count=1</code> declares a completely <strong>different</strong>, local <code>count</code> that only exists inside the loop — a coincidence of naming, not the same variable. This loop-local <code>count</code> is really just a step counter; it could have been called <code>i</code> and behave identically.</p>
+<p>Two different <code>count</code>s, same name:</p>
+<table>
+<thead><tr><th>Which <code>count</code></th><th>Where it lives</th><th>What it means</th></tr></thead>
+<tbody>
+<tr><td>Line 4's <code>count</code></td><td>the <code>List</code> object's own field</td><td>how many nodes are currently in the list</td></tr>
+<tr><td>Line 8's <code>count</code></td><td>a fresh local variable, born and dying inside the <code>for</code></td><td>a step counter — how many loop iterations have run</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Positions are <strong>1-indexed</strong>: position 1 means <code>head</code> itself, so the loop takes zero steps to get there. Position 2 takes one step (<code>cur = cur-&gt;next</code> once), position 3 takes two steps, and so on — the loop runs <code>position - 1</code> times.</p>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x500</div>
+    <div class="cell"><span class="item">10</span><span class="next">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">position 1</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next">0x540</span></div>
+    <div class="addr" style="margin-top:.3rem">position 2</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x540</div>
+    <div class="cell"><span class="item">30</span><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">position 3</div>
+  </div>
+</div>
+
+<p>So <code>find(1)</code> returns a pointer straight to <code>head</code> (zero loop iterations). <code>find(3)</code> on this list starts <code>cur</code> at position 1, then runs the loop twice (<code>count</code> goes 1→2, then 2→3), moving <code>cur</code> forward via <code>cur-&gt;next</code> each time, ending at position 3.</p>
+
+<h2>Tracing find(3), address by address</h2>
+
+<p><code>cur</code> is its own pointer variable — own address, separate from every box it visits, same as <code>cur</code> in the traversal loop. Step through the loop running twice:</p>
+
+<div class="stepper" data-stepper>
+  <script type="application/json">
+  {
+    "code": [
+      "cur = head;",
+      "cur = cur->next;   // loop step 1 (count 1→2)",
+      "cur = cur->next;   // loop step 2 (count 2→3, then loop exits)"
+    ],
+    "stages": [
+      { "line": -1, "caption": "The list before find(3) runs. head holds 0x500.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 0, "copy": {"from":"ptr:head","to":"ptr:cur"}, "caption": "cur = head. A new pointer variable at 0x908 now also holds 0x500 — cur and head are two separate boxes holding the same address.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"cur","addr":"0x908","val":"0x500"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 1, "copy": {"from":"node:0x500.next","to":"ptr:cur"}, "caption": "cur = cur->next reads box1's next cell (0x520) and overwrites cur with it. head does not move.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"cur","addr":"0x908","val":"0x520"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 2, "copy": {"from":"node:0x520.next","to":"ptr:cur"}, "caption": "cur = cur->next again, now reading box2's next (0x540). The loop condition count < position now fails, so the loop exits here.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"cur","addr":"0x908","val":"0x540"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] }
+    ]
+  }
+  </script>
+</div>
+
+<p><code>find(3)</code> returns <code>cur</code>'s final value, <code>0x540</code> — the address of box3. The caller now has a pointer straight to position 3, without knowing or caring about any address number itself; you only see the numbers here to trust that the walk actually lands where it should.</p>
+
+<div class="note">The guard <code>if (position &gt; count) return NULL;</code> only checks the <strong>upper</strong> bound. It trusts the caller to never pass a position below 1 — <code>find(0)</code> or <code>find(-5)</code> isn't guarded against here at all, it would just misbehave. That gap is exactly the kind of thing a "spot the bug" question likes to hide in a variant of this function.</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — on a list with 3 nodes, how many times does the loop body run for <code>find(1)</code>?</p>
+  <button class="opt" data-correct>0 times — cur is already at position 1 before the loop starts</button>
+  <button class="opt">1 time</button>
+  <button class="opt">3 times, once per node</button>
+  <div class="feedback good" data-feedback-good>Right — position 1 is head itself, so find(1) does no walking at all; the loop condition count &lt; position is already false (1 &lt; 1).</div>
+  <div class="feedback bad" data-feedback-bad>The loop runs position − 1 times. For position 1, that's 1 − 1 = 0 — cur starts at head, which already IS position 1.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="2">
+  <p class="prompt">Second check — for <code>find(3)</code>, how many times does <code>cur = cur-&gt;next;</code> execute?</p>
+  <input type="text" placeholder="a number">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — position − 1 = 3 − 1 = 2 steps.</div>
+  <div class="feedback bad" data-feedback-bad>The loop runs <code>position - 1</code> times. What's 3 − 1?</div>
+</div>
+
+<p class="ask-agent">Once find(position) feels mechanical — not memorized, mechanical — insert and remove are just "find the right spot, then relink a couple of pointers."</p>
+
+<div class="nav">
+  <a href="0007-the-list-container.html">&larr; the List container</a>
+  <a href="0009-insert-legal-range.html">next: where can you insert? &rarr;</a>
+</div>
+
+<script src="../assets/stepper.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

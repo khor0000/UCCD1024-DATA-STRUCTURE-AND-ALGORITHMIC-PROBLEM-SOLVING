@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16 — Assign, don't declare, inside a constructor</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Built 26 Aug 2026 from your own drill · Exam code shape #1 · Midterm Q2a, Final Q1b</div>
+<h1>Assign, don't declare, inside a constructor</h1>
+
+<p><strong>Inside a constructor body, never write a type.</strong> Write <code>age = 0;</code>, not <code>int age = 0;</code>. The one word <code>int</code> is the difference between the constructor working and the constructor doing nothing at all.</p>
+
+<p>That is the whole lesson. Everything below is why.</p>
+
+<h2>What you wrote</h2>
+
+<pre><code>person::person(){
+    string name = NULL;   <span class="wrong">// ← declares a brand-new string</span>
+    int age = 0;          <span class="wrong">// ← declares a brand-new int</span>
+}</code></pre>
+
+<p>This compiles. It runs. And when it finishes, <code>person</code>'s <code>name</code> and <code>age</code> are still garbage — completely untouched.</p>
+
+<p>You might reasonably wonder: <em>but I clearly set <code>age</code> to 0, I can see it right there.</em> You set <strong>an</strong> <code>age</code> to 0. Not <strong>the</strong> <code>age</code>.</p>
+
+<h2>The two boxes</h2>
+
+<div class="metaphor">
+<p><span class="term">Two people named Ali in one room.</span> The struct already has an Ali — the member. Writing <code>int age</code> inside the constructor walks a second Ali into the room. From that line onward, "Ali" means the new one. You hand the parcel to the new Ali, then the new Ali walks out and is destroyed when the function ends. The original Ali never got the parcel and never knew anyone was talking to him.</p>
+</div>
+
+<p>A type in front of a name is the C++ instruction for <em>make a new box</em>. It is not an instruction for <em>put something in the box that already exists</em>.</p>
+
+<table>
+<thead><tr><th>You write</th><th>C++ hears</th><th>Effect on the member</th></tr></thead>
+<tbody>
+<tr><td><code>int age = 0;</code></td><td>make a new box called <code>age</code>, put 0 in it</td><td class="bad-cell"><strong>none</strong> — member untouched</td></tr>
+<tr><td><code>age = 0;</code></td><td>find the box called <code>age</code>, put 0 in it</td><td class="good-cell"><strong>member set to 0</strong> ✓</td></tr>
+</tbody>
+</table>
+
+<h3>Draw the state</h3>
+
+<p>Two stages, running <code>person p1;</code> with your version of the constructor:</p>
+
+<div class="diagram">
+<p class="stage-label">Stage 1 — <code>p1</code> is created. Its members exist, holding garbage. The constructor is about to run.</p>
+<pre class="ascii">        p1  (the person)
+        ┌───────────────┬─────────┐
+        │ name: ???     │ age: ?? │   ← the members. These are the ones that matter.
+        └───────────────┴─────────┘</pre>
+
+<p class="stage-label">Stage 2 — <code>int age = 0;</code> runs. A <em>second</em>, unrelated box appears inside the function.</p>
+<pre class="ascii">        p1  (the person)
+        ┌───────────────┬─────────┐
+        │ name: ???     │ age: ?? │   ← STILL garbage. Nothing reached it.
+        └───────────────┴─────────┘
+
+        inside person::person()
+        ┌─────────┐
+        │ age: 0  │   ← the new box. Set correctly. Dies at the closing brace.
+        └─────────┘</pre>
+
+<p class="stage-label">Stage 3 — the constructor ends. The local box is destroyed. <code>p1.age</code> is still garbage.</p>
+</div>
+
+<p>Now the same two stages with <code>age = 0;</code> — no type:</p>
+
+<div class="diagram">
+<p class="stage-label">No second box is ever made. The name <code>age</code> finds the only <code>age</code> there is.</p>
+<pre class="ascii">        p1  (the person)
+        ┌───────────────┬─────────┐
+        │ name: ???     │ age: 0  │   ← set. ✓
+        └───────────────┴─────────┘</pre>
+</div>
+
+<h2>Why this is worth a whole lesson</h2>
+
+<p>Because <strong>the compiler will not warn you.</strong> Declaring a local variable with the same name as a member is legal C++ — it's called <em>shadowing</em>, and it's occasionally useful, so the language permits it silently. Your program compiles clean and behaves wrongly.</p>
+
+<p>On paper, a marker reading <code>int age = 0;</code> inside a constructor sees a constructor that doesn't construct. It is the single most common way this exam shape loses marks.</p>
+
+<div class="note">
+<p><strong>The parameterised one has the same fault.</strong> <code>string name = newName;</code> makes a new local <code>name</code> and fills it from the parameter. The member is untouched. Correct is <code>name = newName;</code>.</p>
+</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Declaring Instead Of Assigning</strong>
+  <p>A type in front of a name inside a constructor body creates a <strong>new local variable</strong> and leaves the member untouched. It compiles cleanly and gives no warning, so nothing tells you it is wrong.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody>
+      <tr><td><code>age = 0;</code></td><td><code>int age = 0;</code></td></tr>
+      <tr><td><code>name = newName;</code></td><td><code>string name = newName;</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Every Member, Every Constructor</strong>
+  <p>A constructor's job is to leave <em>no</em> member unset. It is easy to write the parameterised one, set the member the parameter obviously matches, and forget the other. A <code>next</code> that was never set holds rubbish, and the chain it belongs to breaks unpredictably.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>Node::Node(int newItem){</code><br>&nbsp;&nbsp;<code>item = newItem;</code><br>&nbsp;&nbsp;<code>next = NULL;</code><br><code>}</code></td>
+      <td><code>Node::Node(int newItem){</code><br>&nbsp;&nbsp;<code>item = newItem;</code><br><code>}</code></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<h2>The one-second check</h2>
+
+<p>Before you hand in any constructor, run your eye down the left edge of its body. <strong>If any line starts with a type — <code>int</code>, <code>string</code>, <code>Node</code>, <code>*</code> — you have almost certainly just written a bug.</strong> A constructor body is nearly all bare assignments.</p>
+
+<pre><code>person::person(){
+    name = "unknown";     <span class="right">// ✓ no type</span>
+    age  = 0;             <span class="right">// ✓ no type</span>
+}
+
+person::person(string newName, int newAge){
+    name = newName;       <span class="right">// ✓ no type</span>
+    age  = newAge;        <span class="right">// ✓ no type</span>
+}</code></pre>
+
+<h2>Quick check</h2>
+
+<div class="quiz" data-quiz>
+<p class="prompt">A constructor body contains the line <code>int count = 5;</code>, and the struct has a member <code>count</code>. After the constructor finishes, what does the member hold?</p>
+<button class="opt" data-correct>Whatever garbage it held before</button>
+<button class="opt">The value five, as intended</button>
+<button class="opt">Zero, because it gets reset</button>
+<button class="opt">Nothing — it fails to compile</button>
+<div class="feedback good" data-feedback-good>Right. The type made a second, local <code>count</code>. It took the 5 and died at the closing brace. The member was never addressed, so it still holds whatever was in that memory. And it compiles cleanly, which is what makes it dangerous.</div>
+<div class="feedback bad" data-feedback-bad>Look at the left edge of the line. It starts with a type — so that line builds a new box rather than filling the existing one.</div>
+</div>
+
+<h2>Blank paper — this is the part that counts</h2>
+
+<p class="ask-agent"><strong>Close this file.</strong> On paper, write both constructors for a struct <code>book</code> holding a <code>string title</code> and an <code>int pages</code>. Default sets <code>"untitled"</code> and <code>0</code>. Parameterised takes both. Four lines of body total, and not one of them begins with a type.</p>
+
+<p class="ask-agent">Then bring it back and tell me what you wrote. Ask me anything that didn't land — that's what I'm here for.</p>
+
+<div class="note">
+<p><strong>Primary source.</strong> <a href="https://en.cppreference.com/w/cpp/language/constructor">cppreference — Constructors and member initializer lists</a>. The section on <em>member initializer lists</em> shows the syntax that exists precisely to make this mistake impossible; your lecturer's code uses plain assignment, so write it his way on the paper.</p>
+</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; NULL Is For Pointers Only</strong>
+  <p><code>NULL</code> means "this <strong>pointer</strong> points at nothing". It is not a general-purpose "empty". A <code>string</code> is not a pointer, so <code>name = NULL;</code> says nothing meaningful &mdash; setting a constructor&rsquo;s members to "empty" needs the right empty for each type.</p>
+  <table>
+    <thead><tr><th>Type</th><th>Empty is</th></tr></thead>
+    <tbody>
+      <tr><td><code>Node *</code> &mdash; any pointer</td><td><code>NULL</code></td></tr>
+      <tr><td><code>string</code></td><td><code>""</code> &mdash; two quote marks, nothing between</td></tr>
+      <tr><td><code>int</code> / <code>double</code></td><td><code>0</code> / <code>0.0</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="nav">
+<a href="0006f-the-constructor.html">← 6f · The constructor</a>
+<a href="0006g-which-vs-when.html">6g · Which vs when</a>
+</div>
+
+<style>
+.wrong { color: var(--red); }
+.right { color: var(--cyan); }
+.bad-cell { color: var(--red-ink); }
+.good-cell { color: var(--cyan-ink); }
+.stage-label { font-size: 0.9rem; color: var(--ink-soft); margin-bottom: 0.35rem; }
+pre.ascii { font-size: 0.82rem; line-height: 1.35; }
+</style>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

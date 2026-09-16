@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17 — Static vs dynamic: the four ways to make an object</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Built 26 Aug 2026 from your own drill · Exam code shape #2 · Midterm Q1a &amp; Q2a</div>
+<h1>Static vs dynamic — the four ways to make an object</h1>
+
+<p><strong>Static means the object is a plain variable. Dynamic means the object is made with <code>new</code>.</strong> That is the entire distinction. You already write both — you just did not know the two words for them.</p>
+
+<div class="note">
+<p><strong>You are not missing a concept here.</strong> In your drill you produced three of the four forms correctly, unprompted, and explained <code>.</code> vs <code>-&gt;</code> in your own words without an error. This lesson gives you the vocabulary for what you already do, and the one form you are missing.</p>
+</div>
+
+<h2>The word "static" is badly chosen — read this first</h2>
+
+<p>You might reasonably wonder: <em>doesn't <code>static</code> mean something else in C++?</em></p>
+
+<p><strong>Yes, and that is why this trips people.</strong> C++ has a keyword <code>static</code>, and it means something different — a variable shared across all objects. <strong>Ignore that keyword completely.</strong> It is not on your paper.</p>
+
+<p>When your lecturer says "static creation", he means only this: <em>the object is an ordinary variable</em>. Nothing is shared, no keyword is typed. If the word bothers you, read it as <strong>"automatic"</strong> — that is the term the C++ standard actually uses.</p>
+
+<table>
+<thead><tr><th>Phrase</th><th>What it means here</th></tr></thead>
+<tbody>
+<tr><td>static creation</td><td><code>book b;</code> — a plain variable. No <code>new</code>.</td></tr>
+<tr><td>dynamic creation</td><td><code>book *p = new book;</code> — made with <code>new</code>.</td></tr>
+<tr><td>the <code>static</code> <em>keyword</em></td><td>Unrelated. Not examined. Forget it.</td></tr>
+</tbody>
+</table>
+
+<h2>The physical difference</h2>
+
+<div class="metaphor">
+<p><span class="term">A desk drawer versus a rented locker.</span></p>
+<p><strong>Static is your desk drawer.</strong> It comes with the desk. You do not ask for it and you cannot give it back. When you leave the room — when the function ends — the drawer goes with the desk. Everything in it is gone. You did not have to tidy up.</p>
+<p><strong>Dynamic is a rented locker.</strong> You go to the desk and ask for one: that request is <code>new</code>. They hand you a key, not the locker — <strong>the key is the pointer</strong>. The locker is nowhere near your desk. Leave the room and the locker stays rented, still holding your things. It stays rented forever until you hand the key back, and handing it back is <code>delete</code>.</p>
+</div>
+
+<p>Almost everything you write wants a drawer. The locker is for the rare thing that has to outlive the room it was made in — and there is a section below on exactly when that happens.</p>
+
+<h2>The four forms — all of them</h2>
+
+<p>Two choices, made independently: <strong>static or dynamic</strong>, and <strong>default or parameterised constructor</strong>. Two times two is four.</p>
+
+<pre><code>// ── STATIC (a plain variable) ───────────────────────────
+
+book b1;                          <span class="c">// default ctor</span>
+book b2("Dune", 412);             <span class="c">// parameterised ctor</span>   <span class="wrong">← the one you missed</span>
+
+b1.title = "HelloWorld";          <span class="c">// dot, because b1 IS a book</span>
+
+
+// ── DYNAMIC (made with new, held by a pointer) ──────────
+
+book *p1 = new book;              <span class="c">// default ctor</span>
+book *p2 = new book("Dune", 412); <span class="c">// parameterised ctor</span>
+
+p1-&gt;title = "Splatoon";           <span class="c">// arrow, because p1 is a POINTER to a book</span></code></pre>
+
+<div class="note">
+<p><strong>The form you did not write:</strong> <code>book b2("Dune", 412);</code> — static, with arguments. No <code>=</code>, no <code>new</code>, arguments go straight after the variable name.</p>
+<p>You might reasonably wonder: <em>why isn't it <code>book b2 = book("Dune", 412);</code>?</em> That also works, but nobody writes it, and your lecturer does not. Learn the short form.</p>
+<p><strong>The <code>*</code> is not optional, and it is the easiest mark to drop.</strong> <code>new book</code> does not hand you a book — it hands you an <em>address</em>. So the variable receiving it must be declared as a pointer:</p>
+<pre><code>book b3  = new book;   <span class="wrong">// ✗ won't compile. b3 is a book; new gives an address.</span>
+book *b3 = new book;   <span class="right">// ✓ b3 is a pointer to a book.</span></code></pre>
+<p>You might reasonably wonder: <em>why does the type change when the constructor didn't?</em> Because <code>new</code> is what changed, not the constructor. <strong>Every single <code>new</code> in C++ produces an address.</strong> An address must be stored in a pointer. The <code>*</code> belongs to the <code>new</code>, so if you write one, write the other.</p>
+<p>And a trap worth knowing now: <strong><code>book b1();</code> with empty brackets is wrong.</strong> C++ reads it as declaring a <em>function</em> called <code>b1</code> that returns a <code>book</code>. For the default constructor, write no brackets at all: <code>book b1;</code>. Note this does <em>not</em> apply to <code>new book()</code> — brackets there are fine.</p>
+</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; The Star Belongs To The new</strong>
+  <p><code>new</code> hands back an <strong>address</strong>, never an object. Whatever receives it must be declared as a pointer. If you write <code>new</code>, write the <code>*</code>.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody>
+      <tr><td><code>book *b = new book;</code></td><td><code>book b = new book;</code></td></tr>
+      <tr><td><code>book b2("Dune", 412);</code></td><td><code>book b2();</code> &mdash; declares a function</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Why one uses <code>.</code> and the other uses <code>-&gt;</code></h2>
+
+<p>You answered this correctly already. Your words:</p>
+
+<blockquote>"The one using <code>.</code> is because it is the object — if an object needs to access its field, use dot. The other uses <code>-&gt;</code> because it is a pointer. The <code>-&gt;</code> means follow the address and look into it, access the field next to the operator."</blockquote>
+
+<p>That is right, and it is the whole rule. <strong>The operator follows the variable's type, not your intent.</strong></p>
+
+<table>
+<thead><tr><th>The variable is…</th><th>Use</th><th>Because</th></tr></thead>
+<tbody>
+<tr><td>a <code>book</code></td><td><code>.</code></td><td>The book is right here. Open it.</td></tr>
+<tr><td>a <code>book *</code></td><td><code>-&gt;</code></td><td>You hold a key. Go to the locker first, then open it.</td></tr>
+</tbody>
+</table>
+
+<h3>Draw the state</h3>
+
+<div class="diagram">
+<p class="stage-label">Stage 1 — <code>book b2("Dune", 412);</code> · static. One box. The box <em>is</em> the book.</p>
+<pre class="ascii">   b2  @ 0x500
+   ┌────────────────┬────────────┐
+   │ title: "Dune"  │ pages: 412 │      b2.title  ← dot. Nothing to follow.
+   └────────────────┴────────────┘</pre>
+
+<p class="stage-label">Stage 2 — <code>book *p2 = new book("Dune", 412);</code> · dynamic. <strong>Two</strong> boxes.</p>
+<pre class="ascii">   p2  @ 0x500              the book @ 0x8A0  (the heap — far away)
+   ┌──────────┐             ┌────────────────┬────────────┐
+   │  0x8A0   │ ──────────► │ title: "Dune"  │ pages: 412 │
+   └──────────┘             └────────────────┴────────────┘
+    the key                  the locker
+
+   p2-&gt;title  ← arrow. Follow 0x8A0 first, then read the field.
+   p2.title   ← WRONG. p2 has no field called title. It holds an address.</pre>
+</div>
+
+<p><strong>The pointer and the object are never the same box.</strong> Draw two boxes every time and the operator chooses itself.</p>
+
+<h2>So when do you actually use <code>new</code>?</h2>
+
+<p><strong>Default to static. Use <code>new</code> only when the object must still exist after the function that made it has finished.</strong></p>
+
+<p>Everything you have written so far lives and dies inside <code>main</code>. So for now: <strong>use static.</strong> That is the honest answer to your question today.</p>
+
+<h3>The one case where static fails</h3>
+
+<p>Forget linked lists for a moment. Here is the whole problem, using only <code>book</code>.</p>
+
+<p>A drawer belongs to a room. When you leave the room, the drawer goes. A function is a room.</p>
+
+<pre><code>book* makeBook() {
+    book b("Dune", 412);   <span class="wrong">// a drawer inside this function</span>
+    return &amp;b;             <span class="wrong">// hand out the drawer's address</span>
+}                          <span class="wrong">// function ends — the drawer is destroyed</span></code></pre>
+
+<p>The caller now holds an address to a book that no longer exists.</p>
+
+<div class="diagram">
+<p class="stage-label">Stage 1 — inside <code>makeBook</code>. The book exists.</p>
+<pre class="ascii">   b @ 0x7F0   (inside makeBook's drawer)
+   ┌────────────────┬────────────┐
+   │ title: "Dune"  │ pages: 412 │
+   └────────────────┴────────────┘</pre>
+
+<p class="stage-label">Stage 2 — <code>makeBook</code> returns. The drawer is gone. The returned address points at nothing.</p>
+<pre class="ascii">   the caller holds 0x7F0        0x7F0  ── destroyed ──
+   ┌──────────┐
+   │  0x7F0   │ ─────►   ✗   reading it now is undefined behaviour
+   └──────────┘</pre>
+</div>
+
+<p>Swap one word and the problem disappears:</p>
+
+<pre><code>book* makeBook() {
+    book *b = new book("Dune", 412);   <span class="right">// a rented locker, not a drawer</span>
+    return b;                          <span class="right">// hand out the key</span>
+}                                      <span class="right">// function ends — the locker stays rented</span></code></pre>
+
+<p><strong>The pointer <code>b</code> dies. The book does not.</strong> That is the only job <code>new</code> has.</p>
+
+<div class="note">
+<p><strong>The rule for your paper, in one line:</strong> if the question says <em>"dynamically"</em> or <em>"using <code>new</code>"</em>, use <code>new</code>. Otherwise use static. The question tells you. You are not asked to decide.</p>
+<p>Later, when you meet linked lists, one more case joins the list: a list node is built inside a function and must survive after it returns, so nodes always use <code>new</code>. <strong>You do not need that yet.</strong> It arrives with the lesson that teaches lists.</p>
+</div>
+
+<h2>What the exam does with this</h2>
+
+<p>Q1a gives you code and asks for the output. The marks are lost on <code>.</code>/<code>-&gt;</code> and on which constructor fired. Q2a asks you to write it. Both want the four forms above and nothing more.</p>
+
+<p>You might reasonably wonder: <em>do I need <code>delete</code>?</em> For the midterm, no question asks for it. Write it if a question mentions memory; otherwise do not spend paper on it. <strong>Every <code>new</code> in real code needs a matching <code>delete</code></strong> — the rented locker — but it is not what is being marked here.</p>
+
+<h2>Quick check</h2>
+
+<div class="quiz" data-quiz>
+<p class="prompt">A line reads <code>book b3("Dune", 412);</code>. Which is true?</p>
+<button class="opt" data-correct>Static creation, parameterised constructor, uses a dot</button>
+<button class="opt">Dynamic creation, parameterised constructor, uses arrow</button>
+<button class="opt">Static creation, default constructor, uses arrow only</button>
+<button class="opt">Dynamic creation, default constructor, needs a delete</button>
+<div class="feedback good" data-feedback-good>Correct. No <code>new</code>, so it is static. Arguments are present, so the parameterised constructor runs. <code>b3</code> is a <code>book</code>, not a pointer, so you access fields with <code>b3.title</code>.</div>
+<div class="feedback bad" data-feedback-bad>Check for the word <code>new</code> first — it is absent. Then check for arguments — they are present. Then ask what type <code>b3</code> is.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="p->pages|p-&gt;pages|(*p).pages">
+<p class="prompt"><code>book *p = new book;</code> — write the expression that reads its <code>pages</code> field.</p>
+<input type="text" placeholder="type the expression">
+<button>Check</button>
+<div class="feedback good" data-feedback-good>Yes. <code>p</code> is a pointer, so you follow the address first.</div>
+<div class="feedback bad" data-feedback-bad>What type is <code>p</code>? Draw its box and see whether it holds the book or an address to it.</div>
+</div>
+
+<h2>Blank paper</h2>
+
+<p class="ask-agent"><strong>Close this file.</strong> Write all four forms for your <code>book</code> struct, in order: static default, static parameterised, dynamic default, dynamic parameterised. Then set <code>title</code> on each one, choosing <code>.</code> or <code>-&gt;</code> correctly. Eight lines.</p>
+
+<p class="ask-agent">Bring it back. And if any line above left you with a question, <strong>tell me</strong> — that is a fault in this lesson and I will fix the lesson itself.</p>
+
+<div class="note">
+<p><strong>Primary source.</strong> <a href="https://en.cppreference.com/w/cpp/language/storage_duration">cppreference — Storage duration</a> names these properly: your "static" is <em>automatic</em> storage duration, and <code>new</code> gives <em>dynamic</em> storage duration. Read the first two paragraphs only.</p>
+</div>
+
+<div class="nav">
+<a href="0016-assign-dont-declare-in-a-constructor.html">← 16 · Assign, don't declare</a>
+<a href="0003-pointers-to-structs.html">3 · Pointers to structs</a>
+</div>
+
+<style>
+.wrong { color: var(--red); }
+.c { color: var(--ink-soft); }
+.stage-label { font-size: 0.9rem; color: var(--ink-soft); margin-bottom: 0.35rem; }
+pre.ascii { font-size: 0.8rem; line-height: 1.35; }
+</style>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

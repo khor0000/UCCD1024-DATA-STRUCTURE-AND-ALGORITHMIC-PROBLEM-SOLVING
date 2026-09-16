@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 24b — Tracing recursion output</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  .tracetable { overflow-x:auto; margin:1.2rem 0; }
+  .tracetable table { font-size:.9rem; }
+  .tracetable td, .tracetable th { padding:.35rem .55rem; text-align:center; white-space:nowrap; }
+  .tracetable td:first-child, .tracetable th:first-child { text-align:left; white-space:normal; }
+  .tracetable .out { font-family:var(--mono); color:var(--cyan-ink); }
+  .tracetable .frozen { color:var(--ink-soft); }
+  .tracetable tr.base td { color:var(--ink-soft); font-style:italic; }
+
+  /* --- stepped nested-code walkthrough (lesson-local) --- */
+  .rw { border:1px solid var(--border); margin:1.4rem 0; }
+  .rw-code { padding:1rem 1.1rem; font-family:var(--mono); font-size:.82rem; line-height:1.7;
+             overflow-x:auto; min-height:13rem; }
+  .rw-empty { color:var(--ink-soft); font-style:italic; }
+  .wf { border:1px solid var(--ink-soft); padding:.4rem .55rem; margin:.3rem 0; }
+  .wf.paused { border-style:dashed; background:var(--bg-well); }
+  .wf-h { font-size:.68rem; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); margin-bottom:.3rem; }
+  .wf-h .badge { color:var(--red-ink); }
+  .wf-child { margin:.3rem 0 .3rem .9rem; border-left:2px solid var(--border); padding-left:.7rem; }
+  .wl { white-space:pre; display:block; padding:.06rem .25rem; }
+  .wl .v { color:var(--red-ink); font-weight:700; }
+  .wl .c { color:var(--ink-soft); }
+  .wl.now { background:var(--cyan-well); }
+  .wl.frozen { box-shadow:inset 2px 0 0 var(--red-ink); }
+  .wl.dim { color:var(--ink-soft); }
+  .wl.dim .v { color:var(--ink-soft); }
+  .rw-cap { padding:.75rem 1.1rem; border-top:1px solid var(--border); font-size:.92rem; min-height:3.6rem; }
+  .rw-cap .out { font-family:var(--mono); color:var(--cyan-ink); }
+  .rw-bar { display:flex; gap:.6rem; align-items:center; padding:.6rem 1.1rem; border-top:1px solid var(--border); }
+  .rw-bar button { font-family:var(--serif); font-size:.9rem; padding:.25rem .9rem; border:1px solid var(--ink-soft);
+                   background:transparent; color:var(--ink); cursor:pointer; }
+  .rw-bar button:disabled { opacity:.35; cursor:default; }
+  .rw-bar .count { font-family:var(--mono); font-size:.76rem; color:var(--ink-soft); margin-left:auto; }
+</style>
+</head>
+<body>
+
+<div class="eyebrow">Lesson 24b · Recursion 2 of 5 · Midterm Q4b</div>
+<h1>Tracing recursion output</h1>
+
+<div class="paper-task">
+  <strong class="title">Retrieval check &bull; 20 seconds</strong>
+  <p>From <a href="0024-reading-recursion.html">Lesson 24</a>: what are the two things every exam recursion must have so it isn&rsquo;t infinite?</p>
+</div>
+<details class="reveal">
+  <summary>reveal</summary>
+  <p>A <strong>base case</strong> (an <code>if</code> that returns without calling itself) and a <strong>shrinking argument</strong> (every self-call passes something smaller).</p>
+</details>
+
+<h2>The function</h2>
+
+<pre><code>void p(int n) {
+    if (n == 0) return;
+    cout &lt;&lt; n &lt;&lt; " ";        // line A
+    p(n - 1);
+    cout &lt;&lt; n &lt;&lt; " ";        // line B
+}</code></pre>
+
+<h2>Step through <code>p(3)</code> the way the computer runs it</h2>
+
+<p>Press <strong>Next</strong> one line at a time. A new copy of <code>p</code> only appears <em>when its call runs</em>, and it <em>disappears when it returns</em> &mdash; so the box shows exactly what is alive right now. Each copy is drawn <strong>inside</strong> the one that called it, so you can see how deep you are. <code>n</code> is replaced by its real number, in red.</p>
+
+<div class="rw" data-recwalk>
+  <div class="rw-code"></div>
+  <div class="rw-cap"></div>
+  <div class="rw-bar">
+    <button data-prev>&larr; Back</button>
+    <button data-next>Next &rarr;</button>
+    <button data-reset>Reset</button>
+    <span class="count"></span>
+  </div>
+</div>
+
+<div class="note"><strong>Read the nesting.</strong> When the box is four copies deep, that is four copies of <code>p</code> alive at once &mdash; <code>p(3)</code> holding <code>p(2)</code> holding <code>p(1)</code> holding <code>p(0)</code>, each paused on its own <code>p(&hellip;)</code> line, each still holding its own <code>n</code>. The dashed <span style="color:var(--red-ink)">paused</span> copies do nothing until the copy inside them returns. Then they wake up, youngest first, and run the line below their call.</div>
+
+<h2>&ldquo;How can <code>n</code> be 3 and 2 and 1 all at once?&rdquo;</h2>
+
+<p>It can&rsquo;t &mdash; and it isn&rsquo;t one <code>n</code>. <strong>Every call to <code>p</code> makes a brand-new box for its own <code>n</code>, at its own address in memory.</strong> They share the name <code>n</code> in the source code, but at run time they are four separate boxes:</p>
+
+<pre><code>p(3)'s n   [ 3 ]   at address 0x61fe10
+p(2)'s n   [ 2 ]   at address 0x61fde0
+p(1)'s n   [ 1 ]   at address 0x61fdb0
+p(0)'s n   [ 0 ]   at address 0x61fd80</code></pre>
+
+<p>This is the same as calling <code>square(x)</code> twice &mdash; each call gets its own <code>x</code>. Recursion just means the earlier calls have not finished yet, so all their boxes exist together. A <code>for</code> loop is the opposite: <strong>one</strong> box for <code>i</code>, written over every pass.</p>
+
+<h2>The same thing as a table</h2>
+
+<p>Once the freeze/unfreeze is clear, a table is faster to write in the exam. One row per action, a column for each copy&rsquo;s own <code>n</code>; a greyed <code>n</code> is a paused copy.</p>
+
+<div class="tracetable">
+<table>
+  <thead><tr><th>Step &mdash; what runs</th><th><code>n</code> in <code>p(3)</code></th><th><code>n</code> in <code>p(2)</code></th><th><code>n</code> in <code>p(1)</code></th><th>output so far</th></tr></thead>
+  <tbody>
+    <tr><td>call <code>p(3)</code>. <code>3 == 0</code>? no</td><td>3</td><td>&ndash;</td><td>&ndash;</td><td class="out">&nbsp;</td></tr>
+    <tr><td><code>p(3)</code> line A: print <code>n</code></td><td>3</td><td>&ndash;</td><td>&ndash;</td><td class="out">3</td></tr>
+    <tr><td><code>p(3)</code> calls <code>p(2)</code>, pauses. <code>2 == 0</code>? no</td><td class="frozen">3</td><td>2</td><td>&ndash;</td><td class="out">3</td></tr>
+    <tr><td><code>p(2)</code> line A: print <code>n</code></td><td class="frozen">3</td><td>2</td><td>&ndash;</td><td class="out">3 2</td></tr>
+    <tr><td><code>p(2)</code> calls <code>p(1)</code>, pauses. <code>1 == 0</code>? no</td><td class="frozen">3</td><td class="frozen">2</td><td>1</td><td class="out">3 2</td></tr>
+    <tr><td><code>p(1)</code> line A: print <code>n</code></td><td class="frozen">3</td><td class="frozen">2</td><td>1</td><td class="out">3 2 1</td></tr>
+    <tr class="base"><td><code>p(1)</code> calls <code>p(0)</code>. <code>0 == 0</code>? yes &rarr; return, prints nothing</td><td class="frozen">3</td><td class="frozen">2</td><td class="frozen">1</td><td class="out">3 2 1</td></tr>
+    <tr><td><code>p(1)</code> resumes, line B: print <em>its own</em> <code>n</code></td><td class="frozen">3</td><td class="frozen">2</td><td>1</td><td class="out">3 2 1 1</td></tr>
+    <tr><td><code>p(1)</code> returns. <code>p(2)</code> resumes, line B: print <em>its own</em> <code>n</code></td><td class="frozen">3</td><td>2</td><td>&ndash;</td><td class="out">3 2 1 1 2</td></tr>
+    <tr><td><code>p(2)</code> returns. <code>p(3)</code> resumes, line B: print <em>its own</em> <code>n</code></td><td>3</td><td>&ndash;</td><td>&ndash;</td><td class="out">3 2 1 1 2 3</td></tr>
+    <tr><td><code>p(3)</code> returns. done.</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td class="out">3 2 1 1 2 3</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>Output: <code>3 2 1 1 2 3</code></strong></p>
+
+<div class="note"><strong>The one step people get wrong.</strong> The last print is <code>3</code> &mdash; not 0, not 1 &mdash; because <code>p(3)</code>&rsquo;s own <code>n</code> stayed 3 the entire time it sat paused. Line A and line B are the same text, but each reads the <code>n</code> of whichever copy is running.</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Using the same <code>p</code>, how many numbers does <code>p(2)</code> print in total?</p>
+  <button class="opt" data-correct>4 &mdash; line A prints 2 then 1 going down, line B prints 1 then 2 coming back</button>
+  <button class="opt">2 &mdash; one per level</button>
+  <button class="opt">3 &mdash; 2, 1, then 0</button>
+  <div class="feedback good" data-feedback-good>Right: <code>2 1 1 2</code>. Two copies (<code>p(2)</code>, <code>p(1)</code>), each printing once on the way down and once on the way back = 4.</div>
+  <div class="feedback bad" data-feedback-bad>Each copy runs line A (down) <em>and</em> line B (up). Two copies reach a print, so that is 2 &times; 2 = 4 numbers. The base case <code>p(0)</code> prints nothing.</div>
+</div>
+
+<p class="ask-agent">Step the walkthrough through <code>p(2)</code> in your head, then redraw the table for it on paper. If a row comes out wrong, tell me which one.</p>
+
+<div class="nav">
+  <a href="0024-reading-recursion.html">&larr; Lesson 24 &mdash; why it isn&rsquo;t infinite</a>
+  <a href="0024c-above-and-below-the-call.html">Lesson 24c &mdash; above vs below the call &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+(() => {
+  const STEPS = [
+    { d:0, run:-1, line:-1, base:false, out:"",            cap:"The program is about to call <code>p(3)</code>. Nothing is running yet." },
+    { d:1, run:0,  line:0,  base:false, out:"",            cap:"A copy of <code>p</code> is created with <code>n = 3</code>. First line: check the base case." },
+    { d:1, run:0,  line:1,  base:false, out:"3",           cap:"<code>3</code> isn't <code>0</code>, so the <code>return</code> is skipped. Line A runs and prints <code>3</code>." },
+    { d:1, run:0,  line:2,  base:false, out:"3",           cap:"The line <code>p(2)</code> runs. This creates a NEW copy. <code>p(3)</code> pauses right on this line." },
+    { d:2, run:1,  line:0,  base:false, out:"3",           cap:"Copy <code>p(2)</code> appears, drawn inside <code>p(3)</code>. It has its own <code>n = 2</code>. Check its base case." },
+    { d:2, run:1,  line:1,  base:false, out:"3 2",         cap:"<code>2</code> isn't <code>0</code>. Line A: print <code>2</code>." },
+    { d:2, run:1,  line:2,  base:false, out:"3 2",         cap:"<code>p(2)</code> reaches its own <code>p(1)</code> line &mdash; another new copy. <code>p(2)</code> pauses." },
+    { d:3, run:2,  line:0,  base:false, out:"3 2",         cap:"Copy <code>p(1)</code>, nested one level deeper. Check base case." },
+    { d:3, run:2,  line:1,  base:false, out:"3 2 1",       cap:"<code>1</code> isn't <code>0</code>. Line A: print <code>1</code>." },
+    { d:3, run:2,  line:2,  base:false, out:"3 2 1",       cap:"<code>p(1)</code> reaches <code>p(0)</code>. New copy. <code>p(1)</code> pauses." },
+    { d:4, run:3,  line:0,  base:true,  out:"3 2 1",       cap:"Copy <code>p(0)</code>. Now <code>0 == 0</code> is <strong>TRUE</strong>: this copy returns immediately and prints nothing. The three lines below it never run. Four copies are alive at this moment." },
+    { d:3, run:2,  line:3,  base:false, out:"3 2 1 1",     cap:"<code>p(0)</code> returned &mdash; its copy is gone. <code>p(1)</code> un-pauses on the very next line and prints <em>its own</em> <code>n</code>, still <code>1</code>." },
+    { d:2, run:1,  line:3,  base:false, out:"3 2 1 1 2",   cap:"<code>p(1)</code> returned. <code>p(2)</code> un-pauses on its next line and prints its own <code>n = 2</code>." },
+    { d:1, run:0,  line:3,  base:false, out:"3 2 1 1 2 3", cap:"<code>p(2)</code> returned. <code>p(3)</code> un-pauses and prints its own <code>n = 3</code>." },
+    { d:0, run:-1, line:-1, base:false, out:"3 2 1 1 2 3", cap:"<code>p(3)</code> returned. Every copy is gone. Final output: <span class='out'>3 2 1 1 2 3</span>." },
+  ];
+
+  function rolesFor(step, k) {
+    const r = ["pending","pending","pending","pending"];
+    if (k < step.run) { r[0]="skip"; r[1]="done"; r[2]="frozen"; r[3]="pending"; }
+    else if (k === step.run) {
+      if (step.base) { r[0]="now-base"; r[1]="dead"; r[2]="dead"; r[3]="dead"; }
+      else if (step.line === 3) { r[0]="skip"; r[1]="done"; r[2]="returned"; r[3]="now-up"; }
+      else for (let li=0; li<4; li++) {
+        if (li < step.line) r[li] = li===0 ? "skip" : "done";
+        else if (li === step.line) r[li] = "now";
+        else r[li] = "pending";
+      }
+    }
+    return r;
+  }
+
+  function codeHTML(li, v) {
+    const V = `<span class="v">${v}</span>`;
+    if (li === 0) return `if (${V} == 0) return;`;
+    if (li === 1) return `cout &lt;&lt; ${V} &lt;&lt; " ";`;
+    if (li === 2) return `p(<span class="v">${v - 1}</span>);`;
+    return `cout &lt;&lt; ${V} &lt;&lt; " ";`;
+  }
+
+  function cmtText(li, v, role, out) {
+    if (li === 0) {
+      if (role === "now-base") return `${v} == 0 &rarr; TRUE &mdash; return now, nothing prints`;
+      if (role === "now")      return `is ${v} == 0 ? no &mdash; skip the return`;
+      if (role === "skip")     return `(${v} is not 0)`;
+      return "";
+    }
+    if (li === 1) {
+      if (role === "now")  return `prints ${v}   &rarr; output so far: ${out}`;
+      if (role === "done") return `already printed ${v}`;
+      if (role === "dead") return `never runs`;
+      return "";
+    }
+    if (li === 2) {
+      if (role === "now")      return `make a new copy p(${v - 1}); pause here`;
+      if (role === "frozen")   return `⏸ paused here until p(${v - 1}) returns`;
+      if (role === "returned") return `p(${v - 1}) returned &mdash; carry on`;
+      if (role === "dead")     return `never runs`;
+      return "";
+    }
+    if (role === "now-up") return `resume HERE &rarr; prints ${v}   &rarr; output so far: ${out}`;
+    if (role === "dead")   return `never runs`;
+    return `runs on the way back up`;
+  }
+
+  function frameHTML(step, k) {
+    const v = 3 - k;
+    const r = rolesFor(step, k);
+    const paused = k < step.run;
+    let inner = "";
+    for (let li = 0; li < 4; li++) {
+      const role = r[li];
+      let cls = "wl";
+      if (role.indexOf("now") === 0) cls += " now";
+      else if (role === "frozen") cls += " frozen";
+      else if (["skip", "done", "returned", "dead"].indexOf(role) >= 0) cls += " dim";
+      const c = cmtText(li, v, role, step.out);
+      inner += `<span class="${cls}">${codeHTML(li, v)}${c ? `   <span class="c">// ${c}</span>` : ""}</span>`;
+      if (li === 2 && k + 1 < step.d) inner += `<div class="wf-child">${frameHTML(step, k + 1)}</div>`;
+    }
+    return `<div class="wf${paused ? " paused" : ""}"><div class="wf-h">copy p(${v}) &nbsp;&middot;&nbsp; n = ${v}${paused ? ' <span class="badge">paused</span>' : ""}</div>${inner}</div>`;
+  }
+
+  document.querySelectorAll("[data-recwalk]").forEach((el) => {
+    const codeEl = el.querySelector(".rw-code");
+    const capEl = el.querySelector(".rw-cap");
+    const countEl = el.querySelector(".count");
+    const prev = el.querySelector("[data-prev]");
+    const next = el.querySelector("[data-next]");
+    const reset = el.querySelector("[data-reset]");
+    let i = 0;
+    const render = () => {
+      const step = STEPS[i];
+      codeEl.innerHTML = step.d === 0
+        ? '<div class="rw-empty">(no copies of p are running)</div>'
+        : frameHTML(step, 0);
+      capEl.innerHTML = step.cap;
+      countEl.textContent = `line ${i} / ${STEPS.length - 1}`;
+      prev.disabled = i === 0;
+      next.disabled = i === STEPS.length - 1;
+    };
+    prev.addEventListener("click", () => { if (i > 0) { i--; render(); } });
+    next.addEventListener("click", () => { if (i < STEPS.length - 1) { i++; render(); } });
+    reset.addEventListener("click", () => { i = 0; render(); });
+    render();
+  });
+})();
+</script>
+</body>
+</html>

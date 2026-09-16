@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6c — Tracing the traversal loop</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 6c of the linked-list crash sequence · Detour: trace practice</div>
+<h1>Tracing the traversal loop, step by step</h1>
+
+<p>Same list as Lesson 6b — box1 (<code>0x500</code>) → box2 (<code>0x520</code>) → box3 (<code>0x540</code>) → <code>NULL</code>. Now watch what <code>cur</code> actually holds, address by address, as this loop runs:</p>
+
+<pre><code>Node *cur = head;
+while (cur != NULL) {
+    cout &lt;&lt; cur-&gt;item &lt;&lt; " ";
+    cur = cur-&gt;next;
+}
+// prints: 10 20 30</code></pre>
+
+<p><code>cur</code> is its own pointer variable, living at its own address (<code>0x700</code>) — separate from every box it will ever point at, exactly like <code>n1</code>/<code>n2</code>/<code>n3</code> were.</p>
+
+<h2>Iteration 1</h2>
+
+<p><code>Node *cur = head;</code> copies <code>head</code>'s value into <code>cur</code>. <code>head</code> holds <code>0x500</code>, so now <code>cur</code> does too:</p>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x700</div>
+    <div class="cell"><span class="next">0x500</span></div>
+    <div class="addr" style="margin-top:.3rem">cur</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x500</div>
+    <div class="cell"><span class="item">10</span><span class="next">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">box1</div>
+  </div>
+</div>
+
+<p><strong>Loop check:</strong> is <code>cur</code> (<code>0x500</code>) equal to <code>NULL</code>? No → enter the loop.<br>
+<strong><code>cur-&gt;item</code>:</strong> follow <code>cur</code> to box1, read <code>item</code> → prints <code>10</code>.<br>
+<strong><code>cur = cur-&gt;next;</code>:</strong> follow <code>cur</code> to box1, read box1's <code>next</code> field (<code>0x520</code>), store that into <code>cur</code>.</p>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — after <code>cur = cur-&gt;next;</code> runs for the first time, what value does <code>cur</code> hold?</p>
+  <button class="opt">0x500 — unchanged</button>
+  <button class="opt" data-correct>0x520 — box1's next field, so cur now points at box2</button>
+  <button class="opt">0x700 — cur's own address</button>
+  <div class="feedback good" data-feedback-good>Right — cur = cur->next means "look up my current target's next field, and move there."</div>
+  <div class="feedback bad" data-feedback-bad>cur = cur->next reads the next field of whatever cur currently points at (box1), and overwrites cur's own value with it.</div>
+</div>
+
+<h2>Iteration 2</h2>
+
+<p><code>cur</code>'s own address is still <code>0x700</code> — that never changes. Only the value inside it moves:</p>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x700</div>
+    <div class="cell"><span class="next">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">cur</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next">0x540</span></div>
+    <div class="addr" style="margin-top:.3rem">box2</div>
+  </div>
+</div>
+
+<p><strong>Loop check:</strong> <code>cur</code> (<code>0x520</code>) != <code>NULL</code> → continue.<br>
+<strong>Print:</strong> <code>cur-&gt;item</code> → <code>20</code>.<br>
+<strong>Advance:</strong> <code>cur = cur-&gt;next</code> → reads box2's <code>next</code> (<code>0x540</code>), stores it in <code>cur</code>.</p>
+
+<h2>Iteration 3</h2>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x700</div>
+    <div class="cell"><span class="next">0x540</span></div>
+    <div class="addr" style="margin-top:.3rem">cur</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x540</div>
+    <div class="cell"><span class="item">30</span><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">box3</div>
+  </div>
+</div>
+
+<p><strong>Loop check:</strong> <code>cur</code> (<code>0x540</code>) != <code>NULL</code> → continue.<br>
+<strong>Print:</strong> <code>cur-&gt;item</code> → <code>30</code>.<br>
+<strong>Advance:</strong> <code>cur = cur-&gt;next</code> → reads box3's <code>next</code>, which is <code>NULL</code>. <code>cur</code> now holds <code>NULL</code>.</p>
+
+<h2>Loop stops</h2>
+
+<div class="diagram">
+  <div class="node">
+    <div class="addr">0x700</div>
+    <div class="cell"><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">cur</div>
+  </div>
+</div>
+
+<p><strong>Loop check:</strong> <code>cur</code> is now <code>NULL</code>, so <code>cur != NULL</code> is false → the loop stops. No box for <code>cur</code> to point at — that's exactly the point of <code>NULL</code>: it's not the address of anything, it's the "nothing here" signal that ends the walk.</p>
+
+<p>Output across all three iterations: <code>10 20 30</code>, matching the comment in the code.</p>
+
+<div class="quiz short" data-quiz-short data-answer="null|NULL">
+  <p class="prompt">Second check — the loop runs exactly 3 times because there are 3 boxes. What specific value in cur is what actually stops it?</p>
+  <input type="text" placeholder="what value?">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — cur becoming NULL (copied from box3's next) is what fails the while condition.</div>
+  <div class="feedback bad" data-feedback-bad>Look at the last diagram above — what does cur hold right before the loop check fails?</div>
+</div>
+
+<div class="note"><strong>Going forward:</strong> any code involving pointers in this course will get this same treatment — a var-box (its own address, holding a value) with an arrow to whatever it currently points at, redrawn at each step where that value changes. If a diagram is ever missing for pointer-tracing code and it isn't clicking, ask for one.</div>
+
+<p class="ask-agent">If any single iteration's three steps (check → print → advance) still feels rushed, ask for it walked even slower before moving to the List container.</p>
+
+<div class="nav">
+  <a href="0006b-addresses-behind-the-arrows.html">&larr; addresses behind the arrows</a>
+  <a href="0006d-functions-inside-a-struct.html">next: functions inside a struct &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

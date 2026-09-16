@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5 — The new keyword</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 5 of the linked-list crash sequence · Creating Nodes</div>
+<h1>The new keyword</h1>
+
+<p><code>new</code> asks the computer, right now, while your program is running, for one fresh chunk of memory big enough to hold whatever you asked for — and hands you back its address. That's the whole definition.</p>
+
+<pre><code>Node *n1 = new Node();   // ask for one fresh Node-sized box, get its address
+n1-&gt;item = 10;
+n1-&gt;next = NULL;
+
+cout &lt;&lt; n1-&gt;item;        // 10</code></pre>
+
+<p>Once you have <code>n1</code>, everything else is the dot-vs-arrow rule from Lesson 3 — <code>n1</code>'s type is <code>Node *</code>, a pointer, so it's always <code>-&gt;</code>.</p>
+
+<h2>Why not just declare a Node normally?</h2>
+
+<p>Here's the real reason <code>new</code> exists, and it's not the one you'd guess. Watch what goes wrong without it:</p>
+
+<pre><code>void attach(Node *ptr) {
+    Node tmp;                 // <mark class="fault">NOT new — an ordinary local variable</mark>
+    tmp.item = 10;
+    ptr-&gt;next = &amp;tmp;         // point ptr at tmp's address
+}   // the instant this line runs, tmp is destroyed</code></pre>
+
+<p>The moment <code>attach()</code> returns, <code>tmp</code> is gone — but <code>ptr-&gt;next</code> is still pointing at the address where <code>tmp</code> used to be. Whatever <code>ptr</code> is part of is now pointing at garbage. This has nothing to do with not knowing how many Nodes you'll need; it happens even if you know for certain you'll only ever need exactly 3.</p>
+
+<div class="metaphor">
+<p><span class="term">A hotel room vs. a storage unit.</span> An ordinary variable declared inside a function is like a hotel room booked for one night: the instant checkout time comes (the function returns), housekeeping clears everything out, no matter what you left in there. <code>new</code> is renting a storage unit instead: it keeps existing after you've left the building, and stays there until you specifically go cancel it (<code>free</code>).</p>
+</div>
+
+<p>A Node has to survive long after the function that created it has returned — it needs to keep existing as part of the list, possibly for the rest of the program. Only <code>new</code> gives you memory with that kind of lifetime.</p>
+
+<div class="note"><strong>Rule of thumb:</strong> declare normally when something only needs to live as long as the current function/block. Use <code>new</code> when something needs to outlive the function that creates it. Every Node in a list is born inside an <code>insert()</code> call but has to keep existing long after — so it's always <code>new</code>, regardless of whether the final count is known in advance.</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — why does <code>Node tmp; ptr-&gt;next = &amp;tmp;</code> break things, even if you're certain the list will only ever hold exactly 3 items?</p>
+  <button class="opt">It doesn't break anything — count doesn't matter here</button>
+  <button class="opt" data-correct>tmp is destroyed the instant attach() returns, leaving ptr-&gt;next pointing at memory that no longer belongs to it</button>
+  <button class="opt">Because 3 items requires new but 2 items wouldn't</button>
+  <div class="feedback good" data-feedback-good>Right — this is a lifetime problem, not a counting problem. It would break with 1 item or 1000.</div>
+  <div class="feedback bad" data-feedback-bad>Think about what happens to a plain local variable the instant its function returns — regardless of how many items the list ends up holding.</div>
+</div>
+
+<div class="note">This course's real <code>Node</code> also has two constructors, <code>Node(int)</code> and <code>Node()</code>, which let you write <code>new Node(10)</code> to create-and-fill in one line instead of two. Same box, just a shortcut for filling in <code>item</code> at creation time. You'll see this shortcut everywhere in <code>List.cpp</code>.</div>
+
+<div class="quiz short" data-quiz-short data-answer="new|new Node()|new Node|use new">
+  <p class="prompt">Second check — one word: what do you need to write instead of <code>Node tmp;</code> to make it survive past the current function?</p>
+  <input type="text" placeholder="one word / short phrase">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — new is what gives it a lifetime independent of the function that created it.</div>
+  <div class="feedback bad" data-feedback-bad>Look back at the very first code block on this page — what keyword created n1?</div>
+</div>
+
+<p class="ask-agent">One more small piece of vocabulary before you build one: several Nodes chained together (Node 1's next points at Node 2, Node 2's at Node 3, and so on) is called a <strong>linked list</strong> — that's what you're building by hand next lesson.</p>
+
+<div class="nav">
+  <a href="0004-what-is-a-node.html">&larr; what is a Node</a>
+  <a href="0005b-what-is-a-function.html">next: what is a function? &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

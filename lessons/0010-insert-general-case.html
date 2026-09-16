@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10 — insert: the general case</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 10 of the linked-list crash sequence · Insert (part 4 of 4)</div>
+<h1>insert: the general case</h1>
+
+<p>Last lesson handled the two special cases: empty list, and inserting at position 1. Everything else — inserting in the middle, or at the very end — falls through to one shared piece of code. It only ever needs <strong>two</strong> pointers standing on either side of the gap where the new node goes.</p>
+
+<pre><code>// normal case
+pre = find(at-1);   // the node that will come BEFORE the new one
+cur = pre-&gt;next;    // the node that currently comes after pre
+
+tmp-&gt;next = cur;    // new node points forward to cur
+pre-&gt;next = tmp;    // pre now points forward to the new node
+
+count++;
+return true;</code></pre>
+
+<div class="metaphor">
+<p><span class="term">Splicing a new link into a chain.</span> To add a new link between two existing links, you don't touch the whole chain — you only need to hold the link right before the gap (<code>pre</code>) and the link right after it (<code>cur</code>). Clip the new link's other end onto <code>cur</code>, then clip <code>pre</code>'s open end onto the new link.</p>
+</div>
+
+<p>Say the list is <code>10 → 20 → 30</code> and you call <code>insert(2, 15)</code> — insert 15 at position 2. <code>pre</code> (address <code>0x904</code>), <code>cur</code> (<code>0x908</code>), and <code>tmp</code> (<code>0x90C</code>) are three separate pointer variables:</p>
+
+<div class="diagram">
+  <div class="node">
+    <div class="addr">0x500</div>
+    <div class="cell"><span class="item">10</span><span class="next">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">box1</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next">0x540</span></div>
+    <div class="addr" style="margin-top:.3rem">box2</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x540</div>
+    <div class="cell"><span class="item">30</span><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">box3</div>
+  </div>
+</div>
+
+<p>Those three chain boxes are the <em>targets</em>. <code>pre</code> and <code>cur</code> are separate variables with their own addresses, each holding one of those box addresses as a value. <code>pre = find(1)</code> gives <code>pre</code> the value <code>0x500</code>:</p>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x904</div>
+    <div class="cell"><span class="next">0x500</span></div>
+    <div class="addr" style="margin-top:.3rem">pre</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x500</div>
+    <div class="cell"><span class="item">10</span><span class="next">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">box1</div>
+  </div>
+</div>
+
+<p><code>cur = pre-&gt;next</code> then reads box1's <code>next</code> (<code>0x520</code>) and stores that value in <code>cur</code>:</p>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x908</div>
+    <div class="cell"><span class="next">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">cur</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next">0x540</span></div>
+    <div class="addr" style="margin-top:.3rem">box2</div>
+  </div>
+</div>
+
+<p>Neither assignment changed a single chain box — only <code>pre</code>'s and <code>cur</code>'s own contents. Now <code>tmp = new Node(15)</code> makes a fresh box at <code>0x580</code>, <code>next</code> already <code>NULL</code> from the constructor:</p>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x90C</div>
+    <div class="cell"><span class="next">0x580</span></div>
+    <div class="addr" style="margin-top:.3rem">tmp</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x580</div>
+    <div class="cell"><span class="item">15</span><span class="next">?</span></div>
+    <div class="addr" style="margin-top:.3rem">new box</div>
+  </div>
+</div>
+
+<p><strong>Step 1, <code>tmp-&gt;next = cur;</code></strong> — store cur's value (<code>0x520</code>) into the new box's <code>next</code>:</p>
+
+<div class="diagram">
+  <div class="node">
+    <div class="addr">0x580</div>
+    <div class="cell"><span class="item">15</span><span class="next highlight">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">new box</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next">0x540</span></div>
+    <div class="addr" style="margin-top:.3rem">box2</div>
+  </div>
+</div>
+
+<p><strong>Step 2, <code>pre-&gt;next = tmp;</code></strong> — store tmp's value (<code>0x580</code>) into box1's <code>next</code>. The full chain now reads 10 → 15 → 20 → 30:</p>
+
+<div class="diagram">
+  <div class="node">
+    <div class="addr">0x500</div>
+    <div class="cell"><span class="item">10</span><span class="next highlight">0x580</span></div>
+    <div class="addr" style="margin-top:.3rem">box1</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x580</div>
+    <div class="cell"><span class="item">15</span><span class="next">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">new box</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next">0x540</span></div>
+    <div class="addr" style="margin-top:.3rem">box2</div>
+  </div>
+</div>
+
+<p><code>at-1</code> is the key trick: to insert <em>at</em> position 2, you go find the node <em>at position 1</em> — the one that will sit right before the gap — and call it <code>pre</code>. That single line is why nearly all of insert/remove's "which position do I find()?" confusion goes away once you internalize "find one before where I'm working."</p>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Save cur Before You Relink</strong>
+  <p>The line <code>cur = pre-&gt;next;</code> must come <em>before</em> you overwrite <code>pre-&gt;next</code>. Once <code>pre-&gt;next = tmp;</code> runs, <code>pre-&gt;next</code> holds <code>tmp</code>, so reading it back gives <code>tmp</code>, not the old node &mdash; the classic mistake is skipping <code>cur</code> entirely and writing <code>tmp-&gt;next = pre-&gt;next;</code> after the overwrite, which makes the new node point at itself.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>cur = pre-&gt;next;</code><br><code>tmp-&gt;next = cur;</code><br><code>pre-&gt;next = tmp;</code></td>
+      <td><code>pre-&gt;next = tmp;</code><br><code>tmp-&gt;next = pre-&gt;next;</code> <span style="opacity:.6">// = tmp</span></td>
+    </tr></tbody>
+  </table>
+  <p style="margin-bottom:0"><a href="0010b-save-before-overwrite.html">Lesson 10b</a> shows exactly why &mdash; and why, once <code>cur</code> is saved, the last two lines can even run in either order.</p>
+</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; The Question's Definition Wins</strong>
+  <p>Write the <code>insert</code> the paper asks for &mdash; its exact prototype and its stated meaning &mdash; not Lecture 4's from memory. A one-argument <code>insert(x)</code> might mean "insert at the front" on one paper and "sorted insert" on another. Same for <code>bool</code> vs <code>void</code>: return a value only if the signature has one.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td>read the printed prototype + description, code exactly that</td>
+      <td>reproduce the Lecture 4 <code>insert</code> because it is the one you drilled</td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — to insert at position <em>at</em>, what position do you call <code>find</code> on to get <code>pre</code>?</p>
+  <button class="opt">at</button>
+  <button class="opt" data-correct>at - 1</button>
+  <button class="opt">at + 1</button>
+  <div class="feedback good" data-feedback-good>Right — pre is the node that will sit just before the new one, which is one position earlier than where the new node goes.</div>
+  <div class="feedback bad" data-feedback-bad>pre needs to be the node immediately before the gap. If the new node goes at position at, the node before it is at position at - 1.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="cur">
+  <p class="prompt">Second check — one word: after both relinking lines run, <code>tmp-&gt;next</code> holds the same address as which pointer variable?</p>
+  <input type="text" placeholder="a variable name">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Right — cur. tmp-&gt;next = cur was line 1 of the relink, and nothing changed cur after that. (pre-&gt;next now holds tmp, not cur.)</div>
+  <div class="feedback bad" data-feedback-bad>Line 1 of the relink was tmp-&gt;next = cur. Did anything change cur or tmp-&gt;next after that? pre-&gt;next did change — to tmp.</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book</strong>
+  <p>Close this page. On paper, write the general-case block of <code>insert</code> &mdash; from <code>pre = find(...)</code> down to <code>return true;</code>. Then, for <code>insert(2, 15)</code> on <code>10 &rarr; 20 &rarr; 30</code>, write the finished chain.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+  <pre><code>pre = find(at-1);
+cur = pre-&gt;next;
+tmp-&gt;next = cur;
+pre-&gt;next = tmp;
+count++;
+return true;</code></pre>
+  <p>Finished chain: <code>10 &rarr; 15 &rarr; 20 &rarr; 30</code>. <code>pre</code> was <code>find(1)</code> (node 10), <code>cur</code> was node 20; the new node points at 20, then node 10 points at the new node.</p>
+</details>
+
+<p class="ask-agent">You now have every piece insert needs. One short detour next — the single rule behind every "which line runs first" question you've hit — then remove.</p>
+
+<div class="nav">
+  <a href="0009c-insert-position-one.html">&larr; insert — position 1, non-empty</a>
+  <a href="0010b-save-before-overwrite.html">next: save before you overwrite &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

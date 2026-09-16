@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 24d — Recursion vs the loops you already trace</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 24d · Recursion 4 of 5 · Midterm Q1a &amp; Q4b</div>
+<h1>Recursion vs the loops you already trace</h1>
+
+<div class="paper-task">
+  <strong class="title">Retrieval check &bull; 20 seconds</strong>
+  <p>From <a href="0024c-above-and-below-the-call.html">Lesson 24c</a>: a recursive function prints only <em>below</em> the self-call. Does its output come out in order, or reversed?</p>
+</div>
+<details class="reveal">
+  <summary>reveal</summary>
+  <p>Reversed &mdash; the copies resume in reverse order (last frozen, first to finish), so the smallest <code>n</code> prints first.</p>
+</details>
+
+<h2>Same job, different trace</h2>
+
+<p>Q1a hands you a <code>for</code> / <code>while</code> / <code>do-while</code> loop and asks for its output. Q4b hands you a recursive function and asks for its output. <strong>Same skill</strong> &mdash; predict output by hand &mdash; but you trace them differently, and the difference is exactly the frozen-copies idea from Lesson 24b.</p>
+
+<table>
+  <thead><tr><th></th><th>A loop (Q1a)</th><th>Recursion (Q4b)</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Variables</strong></td>
+      <td><strong>One</strong> set. Each pass overwrites them &mdash; the old <code>i</code> is gone for good.</td>
+      <td>A <strong>fresh <code>n</code> per call</strong>. The older ones don&rsquo;t vanish &mdash; they sit frozen, each holding its value, waiting to resume.</td>
+    </tr>
+    <tr>
+      <td><strong>How you trace it</strong></td>
+      <td>One running tally. Top to bottom of the body, then jump back to the top. Repeat until the condition fails.</td>
+      <td>Go <em>all the way down</em> first (every line above the call, for every copy), hit the base case, <em>then</em> come back up running every line <em>below</em> the call &mdash; in reverse.</td>
+    </tr>
+    <tr>
+      <td><strong>Shape of the output</strong></td>
+      <td>One value produced per pass, in pass order.</td>
+      <td>Print only above the call &rarr; like a loop. Print above <em>and</em> below &rarr; each value appears twice, second half reversed.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="note"><strong>Shortcut.</strong> If a recursive function&rsquo;s only <code>cout</code> is its <em>last</em> line (nothing below the call), trace it exactly like a loop &mdash; one value per level, no &ldquo;coming back up&rdquo; half to worry about.</div>
+
+<h2>&ldquo;A <code>for</code> loop can count up or down too &mdash; so what&rsquo;s the real difference?&rdquo;</h2>
+
+<p>True &mdash; the direction is not the difference. And you are right that a function like <code>s</code> (print only after the call) does exactly what a <code>for</code> loop does. For that function there is no real difference.</p>
+
+<p>The difference is what a single loop <strong>cannot</strong> do: <em>pause half-way through one pass, run every deeper pass to the end, then come back and finish the paused pass.</em> A loop body always runs top-to-bottom and then restarts &mdash; it never stops in the middle to go do something else.</p>
+
+<pre><code>void g(int n) {
+    if (n == 0) return;
+    cout &lt;&lt; "(" &lt;&lt; n;   // on the way DOWN
+    g(n - 1);
+    cout &lt;&lt; n &lt;&lt; ")";     // on the way BACK UP, with the SAME n
+}
+// g(3)  ->  (3(2(11)2)3)</code></pre>
+
+<p><code>g</code> does one thing before the call and a different thing after it, <strong>remembering its <code>n</code> across the gap</strong>. One <code>for</code> loop visits each value once &mdash; to get this you would need two loops, or a stack. Recursion gives you the &ldquo;pause and come back&rdquo; for free, as many levels deep as you like.</p>
+
+<div class="note"><strong>At the variable level.</strong> A loop has <strong>one box</strong> for <code>i</code>, overwritten every pass. Recursion makes a <strong>new box</strong> for <code>n</code> on every call, and while the calls are nested <em>all those boxes are alive at once</em> &mdash; that stack of remembered values is the thing a loop does not have. (Lesson 24b&rsquo;s note, &ldquo;how can <code>n</code> be 3 and 2 and 1 at once&rdquo;, is the same point.)</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">You trace a loop with one running tally. Why can&rsquo;t you always do that for recursion?</p>
+  <button class="opt" data-correct>Because each call has its own <code>n</code> that survives frozen &mdash; you may need several values at once</button>
+  <button class="opt">Because recursion has no variables</button>
+  <button class="opt">Because recursion never produces output</button>
+  <div class="feedback good" data-feedback-good>Right. A loop reuses one <code>i</code>; recursion can have <code>p(3)</code>, <code>p(2)</code>, <code>p(1)</code> all alive with different <code>n</code>, which is why the trace table needs a column each.</div>
+  <div class="feedback bad" data-feedback-bad>Recursion does have variables and does print. The catch is that several copies are alive at once, each with its own <code>n</code> &mdash; one tally can&rsquo;t hold them all.</div>
+</div>
+
+<p class="ask-agent">If you ever can&rsquo;t tell whether to trace something as a loop or as recursion &mdash; ask. The tell is one word: does the function&rsquo;s body contain its own name?</p>
+
+<div class="nav">
+  <a href="0024c-above-and-below-the-call.html">&larr; Lesson 24c &mdash; above vs below the call</a>
+  <a href="0024e-what-does-it-compute.html">Lesson 24e &mdash; what does it compute? (Q4c) &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

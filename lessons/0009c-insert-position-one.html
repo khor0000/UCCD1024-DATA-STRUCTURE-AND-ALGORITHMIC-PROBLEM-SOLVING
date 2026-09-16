@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9c — insert: position 1, non-empty</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 9c of the linked-list crash sequence · Insert (part 3 of 4)</div>
+<h1>insert: position 1, non-empty list</h1>
+
+<p>Now there's already a chain, and the new node needs to become the new first stop, pushing the old head one step back:</p>
+
+<pre><code>if (at == 1) {
+    tmp-&gt;next = head;   // new node's "next" now points at the old head
+    head = tmp;         // head now points at the new node instead
+    count++;
+    return true;
+}</code></pre>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Where The return Line Sits</strong>
+  <p>Every branch of a <code>bool</code> function ends with its own <code>return true;</code>, and that line must be <strong>inside the braces</strong> and <strong>last</strong> &mdash; after <code>count++;</code>, before the <code>}</code>. Three ways it goes wrong: missing (execution falls through into the code below &mdash; for <code>at == 1</code> that means <code>find(0)</code> and a corrupted list); outside the <code>}</code> (runs unconditionally, so every call returns here and the branches below are dead); or before <code>count++;</code> (the <code>count++</code> never runs &mdash; <code>return</code> ends the function on its own line).</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>if (at == 1) {</code><br>&nbsp;&nbsp;<code>tmp-&gt;next = head;</code><br>&nbsp;&nbsp;<code>head = tmp;</code><br>&nbsp;&nbsp;<code>count++;</code><br>&nbsp;&nbsp;<code>return true;</code><br><code>}</code></td>
+      <td><code>} return true;</code> <span style="opacity:.6">// outside</span><br><code>return true; count++;</code> <span style="opacity:.6">// count++ dead</span><br><span style="opacity:.6">// or no return at all</span></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<h2>Tracing it, address by address</h2>
+
+<p>Before either line runs: <code>head</code> (its own address, <code>0x900</code>) holds <code>0x500</code> — box1, item <code>10</code>. <code>tmp</code> (address <code>0x904</code>) holds <code>0x560</code> — the brand-new box, item <code>5</code>, <code>next</code> already <code>NULL</code> (set by the constructor, Lesson 6f). Step through both lines:</p>
+
+<div class="stepper" data-stepper>
+  <script type="application/json">
+  {
+    "code": [
+      "tmp->next = head;",
+      "head = tmp;"
+    ],
+    "stages": [
+      { "line": -1, "caption": "Before either line runs. head holds 0x500 (box1). tmp holds 0x560 (the new box), its next already NULL.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"tmp","addr":"0x904","val":"0x560"} ],
+        "nodes": [ {"addr":"0x560","item":"5","next":"NULL"}, {"addr":"0x500","item":"10","next":"0x520"} ] },
+      { "line": 0, "copy": {"from":"ptr:head","to":"node:0x560.next"}, "caption": "tmp->next = head copies head's current value (0x500) into the new box's next cell. The new box now points at the old chain.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"tmp","addr":"0x904","val":"0x560"} ],
+        "nodes": [ {"addr":"0x560","item":"5","next":"0x500"}, {"addr":"0x500","item":"10","next":"0x520"} ] },
+      { "line": 1, "copy": {"from":"ptr:tmp","to":"ptr:head"}, "caption": "head = tmp copies tmp's value (0x560) into head. Only head's own box changes — no Node is touched. The chain is now new box → box1, fully preserved.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x560"}, {"name":"tmp","addr":"0x904","val":"0x560"} ],
+        "nodes": [ {"addr":"0x560","item":"5","next":"0x500"}, {"addr":"0x500","item":"10","next":"0x520"} ] }
+    ]
+  }
+  </script>
+</div>
+
+<p>Full chain preserved: <code>head</code> → new box (5) → box1 (10) → the rest of the chain. Nothing was lost, because <code>tmp->next</code> grabbed <code>head</code>'s old value before <code>head</code> itself changed.</p>
+
+<h2>Watch it fail: the two lines swapped</h2>
+
+<p>Now the exact same two lines, opposite order, from the same starting state:</p>
+
+<div class="stepper" data-stepper>
+  <script type="application/json">
+  {
+    "code": [
+      "head = tmp;         // wrong order — head changes FIRST",
+      "tmp->next = head;   // now reads head's NEW value, not the old chain"
+    ],
+    "stages": [
+      { "line": -1, "caption": "Same starting state as before: head holds 0x500, tmp holds 0x560, next NULL.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"tmp","addr":"0x904","val":"0x560"} ],
+        "nodes": [ {"addr":"0x560","item":"5","next":"NULL"}, {"addr":"0x500","item":"10","next":"0x520"} ] },
+      { "line": 0, "copy": {"from":"ptr:tmp","to":"ptr:head"}, "caption": "head = tmp runs FIRST this time. head now holds 0x560. Box1 (0x500) is not touched by this line — but watch what nothing points at it anymore.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x560"}, {"name":"tmp","addr":"0x904","val":"0x560"} ],
+        "nodes": [ {"addr":"0x560","item":"5","next":"NULL"}, {"addr":"0x500","item":"10","next":"0x520","note":"orphaned — nothing points here anymore"} ] },
+      { "line": 1, "copy": {"from":"ptr:head","to":"node:0x560.next"}, "caption": "tmp->next = head now reads head's CURRENT value — which line 0 already overwrote to 0x560, tmp's own address. The new box points at itself.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x560"}, {"name":"tmp","addr":"0x904","val":"0x560"} ],
+        "nodes": [ {"addr":"0x560","item":"5","next":"0x560","note":"points at itself"}, {"addr":"0x500","item":"10","next":"0x520","note":"orphaned"} ] }
+    ]
+  }
+  </script>
+</div>
+
+<p>The result: a one-node loop pointing at itself, and box1 (plus everything after it) still sitting in memory, fully intact — but unreachable. Nothing in the program holds their address anymore. <code>tmp->next = head</code> only works when it runs <em>before</em> <code>head</code> changes, because it needs to read head's <em>old</em> value — the only copy of the old chain's address that exists anywhere.</p>
+
+<div class="note"><strong>Order matters</strong> because both lines touch the same piece of information (the old chain's starting address) — one line <em>reads</em> it, the other <em>overwrites</em> it. Whichever runs second sees whatever the first one left behind. This exact ordering mistake is a classic "spot the bug" candidate.</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — inserting at position 1 into a non-empty list, why must tmp-&gt;next = head happen before head = tmp?</p>
+  <button class="opt" data-correct>Because once head is overwritten, you've lost the only reference to the old first node</button>
+  <button class="opt">It doesn't matter, either order works</button>
+  <button class="opt">Because C++ requires next to be set before head, by syntax rules</button>
+  <div class="feedback good" data-feedback-good>Right — head is your only pointer to the old chain. Overwrite it first and that chain's address is gone before tmp ever borrows it.</div>
+  <div class="feedback bad" data-feedback-bad>Look at the "watch it fail" trace above: head is the one variable holding the old chain's address. Whichever line reads it second gets the wrong value.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="itself|tmp|its own address|tmp's own address">
+  <p class="prompt">Second check — a few words: in the broken (swapped) order, what does tmp->next end up pointing at?</p>
+  <input type="text" placeholder="what tmp->next ends up as">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Right — itself. head had already been changed to tmp's address before tmp->next = head ran, so tmp->next copies that new value: its own address.</div>
+  <div class="feedback bad" data-feedback-bad>Re-read step 2 (broken) above — by the time that line runs, what does head currently hold?</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book</strong>
+  <p>Close this page. On paper, write the full <code>if (at == 1) { ... }</code> branch of <code>insert</code> for a non-empty list &mdash; all four lines, in order. Then, in one sentence, say why <code>tmp-&gt;next = head;</code> must run <em>before</em> <code>head = tmp;</code>.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+  <pre><code>if (at == 1) {
+    tmp-&gt;next = head;
+    head = tmp;
+    count++;
+    return true;
+}</code></pre>
+  <p><code>tmp-&gt;next = head;</code> must run first because <code>head</code> is the only variable holding the old chain's starting address. Overwrite <code>head</code> first and that address is gone before <code>tmp</code> can borrow it &mdash; the new node ends up pointing at itself.</p>
+</details>
+
+<p class="ask-agent">Cases A and B are now both solid. Next lesson: the general case — inserting in the middle or at the tail, which needs one more pointer than either of these.</p>
+
+<div class="nav">
+  <a href="0009b-insert-empty-list.html">&larr; insert — the empty list case</a>
+  <a href="0010-insert-general-case.html">next: insert — the general case &rarr;</a>
+</div>
+
+<script src="../assets/stepper.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

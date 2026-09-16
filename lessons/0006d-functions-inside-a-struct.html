@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6d — Functions inside a struct</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 6d of the linked-list crash sequence · Structs, part 2</div>
+<h1>Functions inside a struct</h1>
+
+<p>Lesson 2 taught you that a struct holds <strong>data fields</strong>. That was true, but incomplete. A struct can also hold <strong>functions</strong>. That's the one new idea in this lesson — nothing else.</p>
+
+<h2>What you already know</h2>
+
+<pre><code>struct Student {
+    string name;
+    int    mark;
+};</code></pre>
+
+<p>Two data fields. To do anything with a Student, you'd write a separate, outside function and hand the student to it. One small thing first: a parameter can be a whole struct, written just like any other type — <code>Student s</code> is a parameter holding a copy of an entire Student, exactly as <code>int n</code> holds a copy of an int:</p>
+
+<pre><code>struct Student {
+    string name;
+    int    mark;
+};
+
+bool passed(Student s) {     // an OUTSIDE function — takes a Student
+    return s.mark &gt;= 50;
+}
+
+Student a;
+a.mark = 88;
+passed(a);                    // hand a to the function
+</code></pre>
+
+<h2>The new idea</h2>
+
+<p>You can move that function <em>inside</em> the struct:</p>
+
+<pre><code>struct Student {
+    string name;
+    int    mark;
+    bool   passed();      // a function that BELONGS to Student
+};</code></pre>
+
+<p>Now <code>passed</code> is a <strong>member function</strong> — it belongs to <code>Student</code> the same way <code>name</code> and <code>mark</code> do. And it is called the same way too, with a dot:</p>
+
+<pre><code>Student a;
+a.mark = 88;
+
+a.mark;        // read a data member — dot
+a.passed();    // call a member function — dot, plus ()
+</code></pre>
+
+<div class="metaphor">
+<p><span class="term">A microwave, not a workshop.</span> The outside version is a workshop: the food sits on the counter, and you carry it over to a separate machine to heat it. The member-function version is a microwave with the food already inside — the heating button is <em>part of the appliance holding the food</em>. You don't hand the food to the button; you press the button on the thing that already has it.</p>
+</div>
+
+<h2>Why it matters (one reason)</h2>
+
+<p>A member function doesn't need the struct passed in as a parameter, because it's already inside one. Look at the parameter lists:</p>
+
+<table>
+<thead><tr><th>Outside function</th><th>Member function</th></tr></thead>
+<tbody>
+<tr><td><code>bool passed(Student s)</code></td><td><code>bool passed()</code></td></tr>
+<tr><td>Called as <code>passed(a)</code></td><td>Called as <code>a.passed()</code></td></tr>
+<tr><td>Reads <code>s.mark</code></td><td>Reads <code>mark</code> — plainly, no prefix</td></tr>
+</tbody>
+</table>
+
+<p>Inside a member function, writing <code>mark</code> automatically means "the <code>mark</code> of whichever Student this function was called on." That's why the parameter list is empty — the struct isn't passed in, it's already there.</p>
+
+<div class="note">This is the single reason the course's <code>List</code> functions have such short parameter lists. <code>find(int)</code> takes only a position, not a position <em>and</em> a list — the list is whichever one you called it on.</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — given <code>struct Student { string name; int mark; bool passed(); }; Student a;</code>, how do you call <code>passed</code> on <code>a</code>?</p>
+  <button class="opt" data-correct>a.passed()</button>
+  <button class="opt">passed(a)</button>
+  <button class="opt">Student.passed(a)</button>
+  <div class="feedback good" data-feedback-good>Right — a member function is reached through the struct variable with a dot, exactly like a data field, but with <code>()</code> because it's a call.</div>
+  <div class="feedback bad" data-feedback-bad><code>passed(a)</code> is how you'd call the <em>outside</em> version. Once the function lives inside the struct, you reach it the same way you reach <code>a.mark</code> — through the variable, with a dot.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="empty|nothing|none|no parameters|blank|()">
+  <p class="prompt">Second check — one word: the outside version needed <code>(Student s)</code> as its parameter. What is the member version's parameter list?</p>
+  <input type="text" placeholder="one word">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — empty. The Student doesn't need passing in, because the function is already inside one.</div>
+  <div class="feedback bad" data-feedback-bad>Compare the two signatures in the table above. What did the member version drop, and what made it unnecessary?</div>
+</div>
+
+<p class="ask-agent">Next: those member functions were written as <code>bool passed();</code> with a semicolon and no body. Where does the body go?</p>
+
+<div class="nav">
+  <a href="0006c-tracing-the-traversal-loop.html">&larr; tracing the traversal loop</a>
+  <a href="0006e-declaration-vs-definition.html">next: declaration vs definition, and :: &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8b — get and set</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 8b of the linked-list crash sequence · Reading &amp; writing an item</div>
+<h1>get and set</h1>
+
+<p><code>get</code> and <code>set</code> read or overwrite the item at a given position. Both are just <code>find</code> plus one extra line — the only genuinely new idea here is one symbol in <code>get</code>'s signature: <code>int &amp;result</code>.</p>
+
+<h2>The new idea: a reference parameter</h2>
+
+<p><code>int &amp;result</code> means <code>result</code> isn't a copy of whatever the caller passed in — it's <strong>another name for the caller's actual variable</strong>. Change <code>result</code> inside the function, and the caller's original variable changes too, because there was only ever one variable, wearing two names.</p>
+
+<div class="metaphor">
+<p><span class="term">Two name tags on the same locker.</span> An ordinary parameter is a photocopy of the caller's note, handed to you — scribble on it all you want, the original is untouched. A reference parameter is you and the caller both having a key to the exact same locker. There's no copy. Open it, change what's inside, and the caller sees the change the moment they look.</p>
+</div>
+
+<pre><code>void addOne(int x) {     // x is a COPY
+    x = x + 1;
+}
+void addOneRef(int &amp;x) { // x is the SAME variable as the caller's
+    x = x + 1;
+}
+
+int a = 5;
+addOne(a);      // a is still 5 — x was a separate copy
+addOneRef(a);   // a is now 6 — x WAS a, no copy involved</code></pre>
+
+<div class="note">This <code>&amp;</code> is doing a <strong>different job</strong> than the <code>&amp;</code> from Lesson 1. There, <code>&amp;x</code> meant "give me x's address" (used at the call site, on a plain variable). Here, <code>&amp;</code> sits inside a function's <strong>parameter declaration</strong> and means "this parameter is not a copy — it's the caller's own variable." Same symbol, two unrelated jobs, exactly like <code>*</code> back in Lesson 1's declare-vs-dereference note. Nobody calls <code>get(2, &amp;val)</code> with an <code>&amp;</code> at the call site — you just write <code>get(2, val)</code>, and the reference is entirely the function signature's doing.</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — after <code>int a = 5; addOneRef(a);</code>, what is a's value?</p>
+  <button class="opt">5 — a is never touched, only x is</button>
+  <button class="opt" data-correct>6 — x is another name for a, so changing x changes a</button>
+  <button class="opt">Undefined — you can't pass a plain variable to a reference parameter</button>
+  <div class="feedback good" data-feedback-good>Right — a reference parameter has no copy step. x and a are the same variable throughout the call.</div>
+  <div class="feedback bad" data-feedback-bad>Compare to addOne (copy) above: addOneRef takes int &x — no copy, x IS a for the duration of the call.</div>
+</div>
+
+<h2>Why get needs this</h2>
+
+<p><code>get</code>'s return type is already <code>bool</code> — used up signalling success or failure. But <code>get</code> also needs to hand back the actual item. A reference parameter gives it a second way out: write into <code>result</code>, and the caller's variable holds the answer once the call returns.</p>
+
+<pre><code>bool List::get(int position, int &amp;result) {
+	if (position &gt; count) return false;
+	result = find(position)-&gt;item;
+	return true;
+}</code></pre>
+
+<p>Calling it: <code>int val; bool ok = list.get(2, val);</code> — after this, <code>ok</code> tells you whether it worked, and <code>val</code> (not a copy — the exact same <code>val</code>) holds the item at position 2.</p>
+
+<div class="note">Same asymmetric guard as <code>find</code>: <code>if (position &gt; count) return false;</code> only checks the upper bound. <code>get(0, val)</code> or <code>get(-3, val)</code> isn't rejected here either — it falls through to <code>find(position)-&gt;item</code>, which (per Lesson 8) would misbehave on an out-of-range position. Same bug family, different function.</div>
+
+<h2>set: no reference needed</h2>
+
+<pre><code>bool List::set(int position, int newItem) {
+	if (position &gt; count) return false;
+	find(position)-&gt;item = newItem;
+	return true;
+}</code></pre>
+
+<p><code>set</code> only needs to feed a value <em>in</em> — <code>newItem</code> is a plain, ordinary parameter (a copy is fine, since nothing needs to be handed back through it). Only <code>get</code> needed a reference, because only <code>get</code> needs to send an extra value back <em>out</em>.</p>
+
+<div class="quiz short" data-quiz-short data-answer="get|it does in get, not in set|get uses &">
+  <p class="prompt">Second check — one word: which of get/set actually needs a reference parameter, and which doesn't?</p>
+  <input type="text" placeholder="get or set?">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — get needs to send a value back out (no return value left to use for it), set only needs to receive one.</div>
+  <div class="feedback bad" data-feedback-bad>Ask: which function needs to hand an extra value BACK to the caller, beyond just true/false?</div>
+</div>
+
+<p class="ask-agent">Both get and set lean entirely on find — if find(position) itself still feels shaky, that's worth another look before insert next.</p>
+
+<div class="nav">
+  <a href="0008-find-position.html">&larr; find(position)</a>
+  <a href="0009-insert-legal-range.html">next: where can you insert? &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

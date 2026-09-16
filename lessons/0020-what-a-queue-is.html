@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20 — What a queue is</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 20 · Queue (part 1 of 2) · Midterm Q4a</div>
+<h1>What a queue is</h1>
+
+<p><strong>A queue is a line at a shop counter.</strong> New items join at the <em>back</em>. Items leave from the <em>front</em>. The first one in is the first one out &mdash; <strong>FIFO</strong>, first-in-first-out.</p>
+
+<p>Midterm Q4a hands you queue code and asks for its printed output. It does not ask you to write the queue. This lesson is the model you trace with; <a href="0021-tracing-queue-output.html">Lesson 21</a> is the output drill.</p>
+
+<h2>The whole shape, before any code</h2>
+
+<p>A queue has <strong>two ends</strong>, and one operation works at each:</p>
+
+<table>
+  <thead><tr><th>Operation</th><th>Works at</th><th>Plain meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>enqueue(x)</code></td><td>the <strong>tail</strong> (back)</td><td>join the line</td></tr>
+    <tr><td><code>dequeue(x)</code></td><td>the <strong>head</strong> (front)</td><td>leave the line, and hand back who left</td></tr>
+    <tr><td><code>empty()</code></td><td>&mdash;</td><td>is the line empty?</td></tr>
+    <tr><td><code>size()</code></td><td>&mdash;</td><td>how many in the line</td></tr>
+  </tbody>
+</table>
+
+<div class="metaphor">
+<p><span class="term">The bank queue.</span> You walk in and stand at the back &mdash; that is <code>enqueue</code>. The teller calls the person at the front, who leaves &mdash; that is <code>dequeue</code>. Nobody is served out of turn, and nobody joins in the middle. The person who waited longest is served next.</p>
+</div>
+
+<h2>The struct &mdash; recognise it in the exam</h2>
+
+<p>This is a linked list with a pointer to <em>both</em> ends. Same <code>Node</code> as your linked-list lessons (<code>item</code> + <code>next</code>); the extra piece is <code>tail</code>.</p>
+
+<pre><code>using type = int;
+
+struct Queue {
+    int    count;
+    Node  *head;    // the front — dequeue takes from here
+    Node  *tail;    // the back  — enqueue adds here
+    Queue();
+    bool empty();
+    int  size();
+    bool enqueue(int);     // add to the back
+    bool dequeue(int&);    // remove from the front
+    Node *find(int);
+};</code></pre>
+
+<div class="note"><strong>Why <code>tail</code>?</strong> A plain linked list only tracks <code>head</code>. To add at the back you would have to walk the whole chain first. Keeping a <code>tail</code> pointer means <code>enqueue</code> can jump straight to the last node &mdash; no walk. That is the one structural difference from the list you already know.</div>
+
+<h2>enqueue &mdash; join the back</h2>
+
+<pre><code>bool Queue::enqueue(int newItem) {
+    Node *tmp = new Node(newItem);
+    if (!tmp) return false;
+
+    if (empty()) {              // first person in the shop
+        head = tail = tmp;
+        count++;
+        return true;
+    }
+    count++;
+    tail->next = tmp;          // old last node points at the newcomer
+    tail = tmp;                // tail now names the newcomer
+    return true;
+}</code></pre>
+
+<p>Two cases, same as <code>insert</code>: the <strong>empty</strong> queue (the newcomer is both front and back), and the <strong>normal</strong> case (hook it after the current tail, then move <code>tail</code>).</p>
+
+<h2>dequeue &mdash; leave the front</h2>
+
+<pre><code>bool Queue::dequeue(int &itemExtracted) {
+    Node *cur = head;
+    if (empty()) return false;
+
+    count--;
+    itemExtracted = head->item;   // hand back who is leaving
+    head = head->next;            // front moves to the next person
+    free(cur);                    // release the old front node
+    if (count == 0) tail = NULL;  // queue now empty — tail must let go too
+    return true;
+}</code></pre>
+
+<p>This is exactly <code>remove</code> position 1, plus one line: <code>itemExtracted = head-&gt;item;</code> copies the leaving item out through the <strong>reference parameter</strong> before the node is freed.</p>
+
+<div class="metaphor">
+<p><span class="term">The reference parameter is the receipt.</span> You call <code>dequeue(x)</code>. The queue removes the front person and writes their name onto your variable <code>x</code>. After the call, <code>x</code> holds whoever just left. That is how the caller finds out what came off the queue &mdash; <code>dequeue</code> itself only returns <code>true</code>/<code>false</code>.</p>
+</div>
+
+<h2>One trace: <code>enqueue(30)</code> then <code>dequeue(x)</code> on a queue holding <code>10 &rarr; 20</code></h2>
+
+<div class="stepper" data-stepper>
+  <script type="application/json">
+  {
+    "code": [
+      "tmp = new Node(30);",
+      "tail->next = tmp;",
+      "tail = tmp;",
+      "x = head->item;",
+      "head = head->next;",
+      "free(cur);"
+    ],
+    "stages": [
+      { "line": -1, "caption": "Start. Queue holds 10 -> 20. head names node 10 (front), tail names node 20 (back). count 2.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"tail","addr":"0x904","val":"0x520"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"NULL"} ] },
+      { "line": 0, "caption": "enqueue(30): a new node is built at 0x540 holding 30, next = NULL. tmp names it. Nothing is hooked up yet.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"tail","addr":"0x904","val":"0x520"}, {"name":"tmp","addr":"0x908","val":"0x540"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"NULL"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 1, "copy": {"from":"ptr:tmp","to":"node:0x520.next"}, "caption": "tail->next = tmp writes 0x540 into node 20's next cell. The old back node now points at the newcomer.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"tail","addr":"0x904","val":"0x520"}, {"name":"tmp","addr":"0x908","val":"0x540"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 2, "copy": {"from":"ptr:tmp","to":"ptr:tail"}, "caption": "tail = tmp. tail now names node 30. count 3. enqueue is done: queue is 10 -> 20 -> 30.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"tail","addr":"0x904","val":"0x540"}, {"name":"tmp","addr":"0x908","val":"0x540"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 3, "copy": {"from":"node:0x500.item","to":"ptr:x"}, "caption": "dequeue(x): cur = head (0x500). x = head->item copies 10 out into the caller's variable x. The node is still here — only its value was read.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"tail","addr":"0x904","val":"0x540"}, {"name":"cur","addr":"0x90C","val":"0x500"}, {"name":"x","addr":"0xB00","val":"10"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 4, "copy": {"from":"node:0x500.next","to":"ptr:head"}, "caption": "head = head->next. head now names node 20. Node 10 is reachable only through cur.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x520"}, {"name":"tail","addr":"0x904","val":"0x540"}, {"name":"cur","addr":"0x90C","val":"0x500"}, {"name":"x","addr":"0xB00","val":"10"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520","note":"only cur reaches it"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 5, "caption": "free(cur) releases node 10. count 2. Queue is 20 -> 30; x holds 10. count is not 0, so tail is left alone.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x520"}, {"name":"tail","addr":"0x904","val":"0x540"}, {"name":"cur","addr":"0x90C","val":"0x500","note":"dangling"}, {"name":"x","addr":"0xB00","val":"10"} ],
+        "nodes": [ {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] }
+    ]
+  }
+  </script>
+</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Which End Each Operation Touches</strong>
+  <p><code>enqueue</code> adds at <code>tail</code>. <code>dequeue</code> removes at <code>head</code>. Swap them in your head and every output comes out reversed &mdash; you would be modelling a stack, not a queue.</p>
+  <table>
+    <thead><tr><th>Queue (FIFO) &mdash; this lesson</th><th>Stack (LIFO) &mdash; not this</th></tr></thead>
+    <tbody><tr>
+      <td>add at back, remove at front<br>order preserved: in 1 2 3, out 1 2 3</td>
+      <td>add and remove at the same end<br>order reversed: in 1 2 3, out 3 2 1</td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="10|ten">
+  <p class="prompt">Queue holds <code>10 &rarr; 20 &rarr; 30</code> (10 at the front). You call <code>dequeue(x)</code> once. What does <code>x</code> hold afterwards?</p>
+  <input type="text" placeholder="a number">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Right — the front leaves first. x holds 10, queue is now 20 -> 30.</div>
+  <div class="feedback bad" data-feedback-bad>dequeue takes from the head, and the head is the front — the oldest item.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="tail|the tail|tail pointer">
+  <p class="prompt">One word: which pointer does <code>enqueue</code> move?</p>
+  <input type="text" placeholder="head or tail?">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Yes — the newcomer becomes the new back of the line, so tail moves to it.</div>
+  <div class="feedback bad" data-feedback-bad>New items join the back. Which pointer names the back?</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book</strong>
+  <p>On paper: (1) draw a queue holding <code>7 &rarr; 4</code> with <code>head</code> and <code>tail</code> labelled. (2) Show it after <code>enqueue(9)</code>. (3) Show it after <code>dequeue(x)</code>, and write what <code>x</code> holds. (4) In one line each, say what <code>enqueue</code> does and what <code>dequeue</code> does.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+  <p>(1) <code>head &rarr; [7|&bull;] &rarr; [4|NULL] &larr; tail</code></p>
+  <p>(2) after <code>enqueue(9)</code>: <code>head &rarr; [7|&bull;] &rarr; [4|&bull;] &rarr; [9|NULL] &larr; tail</code>. <code>count</code> 3.</p>
+  <p>(3) after <code>dequeue(x)</code>: <code>head &rarr; [4|&bull;] &rarr; [9|NULL] &larr; tail</code>. <code>x</code> holds <code>7</code>. <code>count</code> 2.</p>
+  <p>(4) <code>enqueue</code>: make a node, hook it after <code>tail</code>, move <code>tail</code> to it. <code>dequeue</code>: copy <code>head-&gt;item</code> into the reference parameter, move <code>head</code> forward, free the old front node.</p>
+</details>
+
+<p class="ask-agent">Ask your tutor if the reference parameter in <code>dequeue</code> is still unclear &mdash; it is the whole trick to Q4a's output. Next: <a href="0021-tracing-queue-output.html">tracing queue output</a>.</p>
+
+<div class="nav">
+  <a href="0012-remove-general-case.html">&larr; remove &mdash; general case</a>
+  <a href="0021-tracing-queue-output.html">next: tracing queue output &rarr;</a>
+</div>
+
+<script src="../assets/stepper.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

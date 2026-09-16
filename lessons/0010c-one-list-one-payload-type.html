@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10c — One list, one payload type</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 10c · Insert &mdash; the payload-type question · Q2b</div>
+<h1>One list, one payload type</h1>
+
+<p><strong>Yes &mdash; one <code>List</code> definition holds exactly one kind of item, and that is fixed when the program is compiled.</strong> A list of <code>Person</code> cannot also hold a <code>double</code>. But you do <em>not</em> write a separate <code>NodeDouble</code> struct to get a <code>double</code> list &mdash; you change <strong>one line</strong>, and the list code itself does not change at all.</p>
+
+<p>This lesson answers the question directly and then tells you exactly how much of it matters for the midterm. It is a short aside on <a href="0010-insert-general-case.html">Lesson 10</a>, not a new skill.</p>
+
+<div class="metaphor">
+<p><span class="term">A pre-printed form with one blank at the top.</span> The form says &ldquo;Item type: ______&rdquo; once, at the top. Every row below just says &ldquo;the item&rdquo;. Fill the blank with <code>Person</code> and the whole form is a Person form; fill it with <code>double</code> and every row now means a <code>double</code>. You never reprint the rows &mdash; you only ever change the blank at the top.</p>
+</div>
+
+<h2>The one line that decides &mdash; <code>type</code></h2>
+
+<p>Your course never writes <code>Person</code> inside <code>Node</code> or <code>List</code>. It writes a nickname, <code>type</code>, and sets that nickname once:</p>
+
+<pre><code>// Node.h  and  List.h  both open with:
+using type = Person;          // the ONE line. (older style: typedef Person type;)
+
+struct Node {
+    type   item;              // "type", not "Person"
+    Node  *next;
+    Node(type);
+};</code></pre>
+
+<p><code>using type = Person;</code> means &ldquo;wherever I write <code>type</code>, read <code>Person</code>.&rdquo; The compiler swaps it in everywhere before it compiles anything. Change that single line to <code>using type = double;</code> and <code>Node::item</code> is now a <code>double</code>, <code>insert</code>'s parameter is now a <code>double</code>, <code>get</code> / <code>set</code> / <code>remove</code> all follow &mdash; automatically, because they were all written in terms of the nickname.</p>
+
+<h2>What happens to the <code>Node</code> constructor</h2>
+
+<p>The constructor is written against the nickname too, so its body never changes. Here is the course's version:</p>
+
+<pre><code>Node::Node(type newItem) {
+    item = newItem;      // copy the item into this node
+    next = NULL;         // a new node is attached to nothing yet
+}</code></pre>
+
+<ul>
+<li><code>Node(type newItem)</code> compiles as <code>Node(double newItem)</code> or <code>Node(Person newItem)</code> &mdash; the compiler substitutes the real type.</li>
+<li><code>newItem</code> arrives <strong>by value</strong>: a copy of one whole item (a copy of the number for <code>double</code>; a copy of all the fields for <code>Person</code>).</li>
+<li><code>item = newItem;</code> copies it into the node's <code>item</code> field. For <code>double</code> that is a plain number copy. For <code>Person</code> it is <code>=</code> on a struct &mdash; a member-by-member copy (<a href="0015a-copying-a-struct.html">Lesson 15a</a>), and a <strong>shallow</strong> one: the <code>spouse</code> pointer is copied as an address, not followed (<a href="0015-deep-vs-shallow-copy.html">Lesson 15</a>).</li>
+<li><code>next = NULL;</code> runs for every type &mdash; nothing type-specific about it.</li>
+</ul>
+
+<div class="note"><strong>The item is copied by value three times on its way into the list:</strong><br>
+<code>caller &rarr; insert(int at, type newItem) &rarr; new Node(newItem) &rarr; Node(type newItem) &rarr; node.item</code><br>
+Every arrow is a full copy. That is fine for the exam &mdash; just know the node ends up holding its <em>own</em> copy of the item, independent of the caller's variable.</div>
+
+<div class="note"><strong>You might reasonably wonder: could the constructor just do <code>item = 0;</code>?</strong> Only if <code>type</code> is a number. When <code>type = Person</code>, <code>item = 0;</code> is a <strong>compile error</strong> &mdash; a struct has no rule for &ldquo;become 0&rdquo;, and <code>Person</code> has no <code>operator=</code> that takes an <code>int</code>. This is the real reason the constructor takes the item as a <em>parameter</em> and writes <code>item = newItem;</code> &mdash; that is <code>type</code> assigned to <code>type</code>, the same type on both sides, which always compiles. Type-agnostic code never assigns a <em>literal</em> to <code>item</code>.</div>
+
+<div class="note"><strong>The course's <code>Node</code> has no default <code>Node()</code> constructor</strong> &mdash; only <code>Node(type)</code>. So <code>new Node(newItem)</code> is the only way to make a node; <code>new Node</code> on its own would not compile. If you ever wanted a default one that works for any <code>type</code>, you would leave <code>item</code> untouched: <code>Node::Node() { next = NULL; }</code>.</div>
+
+<h2>Proof: the <code>insert</code> body never names <code>Person</code></h2>
+
+<p>This is the exact <code>insert</code> you drilled. Read every line and look for the word <code>Person</code>:</p>
+
+<pre><code>bool List::insert(int at, type newItem) {
+    Node *pre, *cur, *tmp = new Node(newItem);
+
+    if (at &lt; 1 || at &gt; count+1) return false;
+    if (!tmp) return false;
+
+    if (empty())  { head = tmp; count++; return true; }
+    if (at == 1)  { tmp-&gt;next = head; head = tmp; count++; return true; }
+
+    pre = find(at-1);
+    cur = pre-&gt;next;
+    tmp-&gt;next = cur;
+    pre-&gt;next = tmp;
+    count++;
+    return true;
+}</code></pre>
+
+<p>It is not there. The body only ever moves <em>pointers</em> and copies <code>newItem</code> into a new node. It does not care whether an item is a <code>Person</code>, a <code>double</code>, or an <code>int</code>. That is why, on Day 4, writing <code>insert</code> for an <code>int</code> payload and then for a <code>Person</code> payload was the <strong>same code both times</strong> &mdash; only the alias above the function was different.</p>
+
+<h2>What the compiler sees when you change the alias</h2>
+
+<table>
+  <thead><tr><th></th><th><code>using type = Person;</code></th><th><code>using type = double;</code></th></tr></thead>
+  <tbody>
+    <tr><td><code>Node</code> holds</td><td><code>Person item;</code></td><td><code>double item;</code></td></tr>
+    <tr><td><code>insert</code> signature</td><td><code>insert(int, Person)</code></td><td><code>insert(int, double)</code></td></tr>
+    <tr><td><code>insert</code> body</td><td>unchanged</td><td>unchanged</td></tr>
+    <tr><td>You hand-write</td><td colspan="2" style="text-align:center">just the one <code>using</code> line</td></tr>
+  </tbody>
+</table>
+
+<h2>Can one program have both a <code>Person</code> list and a <code>double</code> list?</h2>
+
+<p>Not from one definition. If you truly need both at once you need <strong>two separate list types</strong> &mdash; two headers, e.g. a <code>ListPerson</code> and a <code>ListDouble</code>, each with its own <code>type</code> alias and its own <code>Node</code>. The professional answer is a C++ <em>template</em> (<code>template&lt;class T&gt; struct List</code>), which stamps out a fresh list type per <code>T</code> on demand. <strong>Templates are not in this course</strong> &mdash; do not use them in the exam.</p>
+
+<div class="note"><strong>One exception where the type <em>does</em> matter:</strong> the <em>sorted</em> insert, <code>bool insert(type)</code> (add in ascending order). To place an item in order it must <em>compare</em> two items &mdash; <code>&lt;</code> for a <code>double</code>, but a member like <code>compareName</code> for a <code>Person</code>. The <strong>positional</strong> insert you drilled, <code>insert(int, type)</code>, never compares anything, so it is completely type-blind. Q2b asks for the positional one.</p></div>
+
+<div class="exam-trap">
+  <strong class="title">Exam Trap &bull; Don't Invent Machinery The Question Didn't Ask For</strong>
+  <p>Q2b <em>tells you</em> the payload type &mdash; &ldquo;a linked list of integers&rdquo;, or a named struct. You write <code>insert</code> / <code>remove</code> against that type (or against <code>type</code> if the given header uses the alias). You never need to write a second <code>Node</code> struct, and you never need a template. Doing so wastes time and invites mistakes.</p>
+  <table>
+    <thead><tr><th>Earns the marks</th><th>Wastes the time</th></tr></thead>
+    <tbody><tr>
+      <td>Write the one <code>insert</code> body the question asked for, using the type it named.</td>
+      <td>Define <code>NodeInt</code>, <code>NodeDouble</code>, a template&hellip; none of it was asked for.</td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="1|one">
+  <p class="prompt">You have a working <code>List</code> of <code>Person</code>. To turn it into a working <code>List</code> of <code>double</code>, how many lines of the list code do you rewrite? <em>Answer with a number.</em></p>
+  <input type="text" placeholder="a number">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Right &mdash; just the <code>using type = ...;</code> alias. The <code>Node</code> struct and every function body stay exactly as they are.</div>
+  <div class="feedback bad" data-feedback-bad>Look at the <code>insert</code> body again &mdash; it never names <code>Person</code>. Only the alias above it does.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="no|false|nope">
+  <p class="prompt">True or false: to store a <code>double</code> you must hand-write a separate <code>struct NodeDouble</code>.</p>
+  <input type="text" placeholder="true or false?">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Correct &mdash; false. <code>Node</code> already holds <code>type item;</code>; you only redefine <code>type</code>.</div>
+  <div class="feedback bad" data-feedback-bad><code>Node</code> stores <code>type item</code>, not <code>Person item</code>. Redefining <code>type</code> is enough.</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book</strong>
+  <p>On paper, for a linked list whose payload is <code>double</code>:</p>
+  <ol>
+    <li>Write the <code>type</code> alias line, the <code>Node</code> struct, and the <code>Node</code> constructor body.</li>
+    <li>Write the full body of <code>bool List::insert(int at, type newItem)</code> &mdash; guard, empty case, position&nbsp;1, general case.</li>
+    <li>Underline every place in your constructor and <code>insert</code> body where the word <code>double</code> appears.</li>
+  </ol>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+<pre><code>using type = double;
+
+struct Node {
+    type   item;
+    Node  *next;
+    Node(type);
+};
+
+Node::Node(type newItem) {
+    item = newItem;
+    next = NULL;
+}
+
+bool List::insert(int at, type newItem) {
+    Node *pre, *cur, *tmp = new Node(newItem);
+
+    if (at &lt; 1 || at &gt; count+1) return false;
+    if (!tmp) return false;
+
+    if (empty())  { head = tmp; count++; return true; }
+    if (at == 1)  { tmp-&gt;next = head; head = tmp; count++; return true; }
+
+    pre = find(at-1);
+    cur = pre-&gt;next;
+    tmp-&gt;next = cur;
+    pre-&gt;next = tmp;
+    count++;
+    return true;
+}</code></pre>
+  <p><strong>Step 3:</strong> the word <code>double</code> appears <strong>nowhere</strong> in the constructor body or the <code>insert</code> body &mdash; only in the <code>using</code> line and (as <code>type</code>) in the two parameter lists. That is the whole point: both bodies are identical to the <code>Person</code> version and the <code>int</code> version you already wrote.</p>
+</details>
+
+<p class="ask-agent">Ask your tutor if you want to see how a real C++ template does this &mdash; but only after the midterm; it is not examined here. Next: <a href="0011-remove-position-one.html">remove &mdash; position 1</a>.</p>
+
+<div class="nav">
+  <a href="0010b-save-before-overwrite.html">&larr; save before you overwrite</a>
+  <a href="0011-remove-position-one.html">next: remove &mdash; position 1 &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

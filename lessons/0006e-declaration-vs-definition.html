@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6e — Declaration vs definition, and ::</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 6e of the linked-list crash sequence · Structs, part 3</div>
+<h1>Declaration vs definition, and <code>::</code></h1>
+
+<p>Last lesson ended with this, and something about it should have bothered you:</p>
+
+<pre><code>struct Student {
+    string name;
+    int    mark;
+    bool   passed();     // ← where's the body?
+};</code></pre>
+
+<p>There's a semicolon where <code>{ ... }</code> should be. The function has no body. That's deliberate: a member function is written in <strong>two separate places</strong>, and this lesson is about both halves.</p>
+
+<div class="note"><strong>The two words themselves are easy to mix up — here's the hook that fixes it for good:</strong> <strong>de-FIN-ition = FINished.</strong> The definition is the finished, complete version — the actual body, the code that runs. A <strong>declaration</strong> is just a <em>claim</em>, like a customs declaration form: it says something exists and what shape it is, but hands over none of the substance. Same mapping as the menu below — menu = declaration, kitchen = definition.</div>
+
+<h2>Half 1 — the announcement (declaration)</h2>
+
+<p><code>bool passed();</code> inside the struct is a <strong>declaration</strong>. It announces that a function called <code>passed</code> exists, returns a <code>bool</code>, and takes no parameters. It does not say what the function <em>does</em>.</p>
+
+<div class="metaphor">
+<p><span class="term">A restaurant menu, and the kitchen.</span> The menu line "Nasi Lemak — RM8" tells you the dish exists, what it's called, and what it costs. It doesn't tell you how it's cooked. The recipe lives in the kitchen, out of sight, on a different piece of paper. The declaration is the menu line; the definition is the recipe.</p>
+</div>
+
+<h2>Half 2 — the recipe (definition)</h2>
+
+<p>The body is written below the struct, on its own:</p>
+
+<pre><code>struct Student {
+    string name;
+    int    mark;
+    bool   passed();          // menu line
+};
+
+bool Student::passed() {      // recipe
+    return mark &gt;= 50;
+}</code></pre>
+
+<p>Read the second block piece by piece:</p>
+
+<ul>
+<li><code>bool</code> — the return type, repeated from the declaration.</li>
+<li><code>Student::</code> — <strong>the new symbol.</strong> It says "this <code>passed</code> is <em>Student's</em> <code>passed</code>."</li>
+<li><code>passed()</code> — the name and parameters, repeated from the declaration.</li>
+<li><code>{ return mark &gt;= 50; }</code> — the body, which only exists here.</li>
+</ul>
+
+<p><code>::</code> is called the <strong>scope resolution operator</strong>, and its whole job is answering "which struct does this function belong to?" Without it, the compiler would read <code>bool passed() {...}</code> as a brand-new outside function that has nothing to do with <code>Student</code> — and then <code>mark</code> inside it would refer to nothing.</p>
+
+<pre><code>bool passed()          { ... }   // an outside function, unrelated to Student
+bool Student::passed() { ... }   // the body of Student's member function
+</code></pre>
+
+<div class="note"><code>::</code> is <strong>not</strong> <code>.</code> or <code>-&gt;</code>. The dot and arrow are used at <em>call</em> time on a variable you have (<code>a.passed()</code>). <code>::</code> is used at <em>definition</em> time on a struct <em>type</em> (<code>Student::passed</code>). There is no Student variable anywhere on that line — you're writing the recipe, not cooking a specific meal.</div>
+
+<h2>Why the declaration can leave parameter names out</h2>
+
+<p>This is the part that trips people up, and it's the exact shape you'll meet in <code>List</code>:</p>
+
+<pre><code>Node *find(int);</code></pre>
+
+<p>Compare it to something you already know from Lesson 3:</p>
+
+<table>
+<thead><tr><th>Code</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td><code>Node *cur;</code></td><td>A <strong>variable</strong> named <code>cur</code> that holds the address of a Node.</td></tr>
+<tr><td><code>Node *find(int);</code></td><td>A <strong>function</strong> named <code>find</code> that takes one <code>int</code> and <em>returns</em> the address of a Node.</td></tr>
+</tbody>
+</table>
+
+<p>The <code>(</code> right after the name is the entire difference. Parentheses after a name mean function; no parentheses mean variable. The <code>Node *</code> at the front means the same thing in both cases — "a Node address" — it's just describing what the variable <em>holds</em> in one, and what the function <em>hands back</em> in the other.</p>
+
+<p><em>(<code>find</code> is a real function from the <code>List</code> struct you'll meet next lesson. Ignore the name and what it does — only its shape matters here.)</em> And the empty-looking <code>(int)</code>: a declaration only needs the parameter's <strong>type</strong>, not its name, because a menu line doesn't need the recipe's variable names. The name appears in the definition, where it's actually used:</p>
+
+<pre><code>Node *find(int);                  // declaration: one int goes in. Name not needed.
+
+Node *List::find(int position) {  // definition: NOW it needs a name, to use it
+    ...uses position here...
+}</code></pre>
+
+<div class="note">Writing <code>Node *find(int position);</code> in the declaration is equally legal, and many people do it for readability. This course's <code>List.h</code> just leaves the names off. The two forms mean exactly the same thing — don't read anything into the difference.</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — what does <code>Node *find(int);</code> declare?</p>
+  <button class="opt" data-correct>A function taking one int, returning a Node address</button>
+  <button class="opt">A pointer variable named find, holding a Node address</button>
+  <button class="opt">A Node whose item is an int</button>
+  <div class="feedback good" data-feedback-good>Right — the parentheses make it a function. <code>Node *</code> at the front describes what it hands back.</div>
+  <div class="feedback bad" data-feedback-bad>Look for the parentheses. <code>Node *cur;</code> is a variable; <code>Node *find(int);</code> has <code>(int)</code> after the name, so it's a function that takes an int.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="student::|student ::|student|::">
+  <p class="prompt">Second check — you're writing the body of Student's <code>passed</code> below the struct. What must go between <code>bool</code> and <code>passed()</code>? (Type it exactly.)</p>
+  <input type="text" placeholder="type the missing piece">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — <code>Student::</code>. Leave it out and you've written an unrelated outside function, and <code>mark</code> inside it refers to nothing.</div>
+  <div class="feedback bad" data-feedback-bad>Re-read the "recipe" block. Something sits between the return type and the function name, naming which struct owns it.</div>
+</div>
+
+<p class="ask-agent">Next: one member function has a strange shape — no return type at all, and the same name as the struct itself.</p>
+
+<h2>Both halves, in one file</h2>
+
+<p>The same function is written twice, in two places, and it is worth seeing those two places at once before anything else:</p>
+
+<pre><code>struct Person {
+    string name;
+    int    age;
+
+    <span class="c">// ─── INSIDE the braces: DECLARATIONS ───</span>
+    <span class="c">// No Person:: — the compiler is already inside Person.</span>
+
+    void   setName(string);
+    string getName();
+    Person();
+};          <span class="c">// ← the struct's braces close here</span>
+
+
+<span class="c">// ─── OUTSIDE the braces: DEFINITIONS ───</span>
+<span class="c">// Person:: is now required — nothing out here says which struct.</span>
+
+void Person::setName(string newName) {
+    name = newName;
+}
+
+string Person::getName() {
+    return name;
+}
+
+Person::Person() {
+    name = "";
+    age  = 0;
+}</code></pre>
+
+<p>Follow <code>getName</code> across both halves:</p>
+
+<table>
+<thead><tr><th>Where</th><th>What is written</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>inside <code>{ }</code></td><td><code>string getName();</code></td><td>already inside <code>Person</code> &mdash; no need to say so</td></tr>
+<tr><td>outside</td><td><code>string Person::getName() {</code></td><td>outside now &mdash; must say which struct</td></tr>
+</tbody>
+</table>
+
+<p>Same function. The only differences are <code>Person::</code>, and a semicolon in place of a body.</p>
+
+<div class="note">
+<p>You might reasonably wonder: <em>why write it twice at all?</em> Delete the declaration and the compiler reads <code>string Person::getName()</code> and answers: <em>Person has no member called getName.</em> Delete the definition instead and it answers: <em>getName was promised but never written.</em></p>
+<p><strong>The declaration promises; the definition delivers.</strong> You need both, and that is the whole reason the same signature appears twice in every C++ struct you will write.</p>
+</div>
+
+<h2>Turning a definition into its declaration &mdash; the four parts</h2>
+
+<p>You never have to remember a declaration separately. <strong>It is the definition&rsquo;s first line with two edits.</strong> Split that line into four parts and the rule reads itself:</p>
+
+<pre><code>string   Person::   getName()   {</code></pre>
+
+<table>
+<thead><tr><th>Part</th><th>What it is</th><th>In the declaration</th></tr></thead>
+<tbody>
+<tr><td><code>string</code></td><td>the <strong>return type</strong></td><td><strong>keep</strong></td></tr>
+<tr><td><code>Person::</code></td><td>which struct this belongs to</td><td><strong>drop</strong></td></tr>
+<tr><td><code>getName()</code></td><td>name + parameter list</td><td><strong>keep</strong></td></tr>
+<tr><td><code>{</code></td><td>start of the body</td><td>replace with <code>;</code></td></tr>
+</tbody>
+</table>
+
+<p>Result: <code>string getName();</code></p>
+
+<p>You might reasonably wonder: <em>why does <code>Person::</code> disappear?</em> Because inside the braces of <code>struct Person { &hellip; }</code>, everything is already known to belong to <code>Person</code> &mdash; repeating it would be redundant. Outside those braces the compiler has no idea which struct <code>getName</code> belongs to, so <code>Person::</code> is how you tell it. Same function, two places, two amounts of context needed.</p>
+
+<h3>Careful &mdash; you drop <code>Person::</code> going <em>in</em>, never going <em>out</em></h3>
+
+<p>You might reasonably wonder: <em>if the declaration inside the struct does not need <code>Person::</code>, can I leave it off the definition outside too?</em> <strong>No.</strong> That is the one place the rule does not run backwards.</p>
+
+<p><code>Person::</code> is not decoration. It answers <strong>"which struct does this function belong to?"</strong> &mdash; a question that only answers itself <em>inside</em> the braces.</p>
+
+<table>
+<thead><tr><th>Where</th><th>What you write</th><th>Legal?</th><th>What it actually is</th></tr></thead>
+<tbody>
+<tr><td>Inside <code>struct Person { }</code></td><td><code>void print();</code></td><td>&#10004;</td><td>a declaration</td></tr>
+<tr><td>Inside <code>struct Person { }</code></td><td><code>void print(){ &hellip; }</code></td><td>&#10004;</td><td>a full definition, written inline</td></tr>
+<tr><td>Outside the braces</td><td><code>void Person::print(){ &hellip; }</code></td><td>&#10004;</td><td>a definition</td></tr>
+<tr><td>Outside the braces</td><td><code>void print(){ &hellip; }</code></td><td>&#10008;</td><td>a <strong>free function</strong> &mdash; unrelated to <code>Person</code></td></tr>
+</tbody>
+</table>
+
+<p>That last row is not a slightly-wrong member function. It is a <em>different function</em> that happens to share a name. And the compiler will not say so directly &mdash; it reports:</p>
+
+<pre><code>error: 'name' was not declared in this scope</code></pre>
+
+<p>A free function has no <code>Person</code>, so <code>name</code>, <code>age</code>, <code>weight</code> and <code>height</code> are simply four undefined variables. <strong>The error points at the fields, never at the missing <code>Person::</code></strong>, which is what makes this one hard to debug from the message alone.</p>
+
+<h3>Two legal styles &mdash; pick one, never mix them</h3>
+
+<pre><code><span class="c">// Style A — declare inside, define outside. What this course uses.</span>
+struct Person {
+    void print();              <span class="c">// declaration</span>
+};
+void Person::print(){ … }      <span class="c">// definition — Person:: required</span>
+
+
+<span class="c">// Style B — define fully inside. No Person:: anywhere.</span>
+struct Person {
+    void print(){ … }          <span class="c">// declaration and definition at once</span>
+};</code></pre>
+
+<p>Both compile. <strong>Move a body outside the braces and you must take <code>Person::</code> with it.</strong> Practical 3 and Lecture 4&rsquo;s <code>List.h</code>/<code>List.cpp</code> both use Style A, so use Style A on the paper.</p>
+
+<div class="metaphor">
+<p><span class="term"><code>Person::</code> is a passport.</span> A function needs one to leave the struct. Inside, it is home and needs nothing.</p>
+</div>
+
+<h3>What may change, and what may not</h3>
+
+<p>Parameter <strong>names</strong> are optional in a declaration. All three of these are legal and mean exactly the same thing, because the compiler reads only the <em>types</em>:</p>
+
+<pre><code>void setName(string newName);   <span class="c">// named</span>
+void setName(string n);         <span class="c">// renamed — no link to the definition</span>
+void setName(string);           <span class="c">// unnamed — the most common form</span></code></pre>
+
+<p>A name written there is documentation for a human reader, nothing more. The <strong>return type</strong> has no such freedom.</p>
+
+<h3>The one exception: constructors have no return type at all</h3>
+
+<pre><code>Person();                    <span class="c">// declaration</span>
+Person::Person() { … }       <span class="c">// definition</span></code></pre>
+
+<p>There is nothing to keep, because there was never a return type to begin with. A constructor does not return a value &mdash; it initialises the object being built. Writing <code>void Person();</code> does not compile, and it is not a milder mistake than omitting a return type elsewhere; it is the opposite mistake.</p>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; The Return Type Is Not Optional</strong>
+  <p>A declaration is <strong>the definition&rsquo;s first line, ending in <code>;</code> instead of <code>{</code></strong>. Take the definition&rsquo;s opening line, drop the <code>ClassName::</code>, drop the body, add a semicolon. Parameter <em>names</em> may be dropped there; the return type may never be.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody>
+      <tr><td><code>string getName();</code></td><td><code>getName();</code></td></tr>
+      <tr><td><code>void setName(string);</code></td><td><code>setName(string newName)</code> with no <code>void</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="nav">
+  <a href="0006d-functions-inside-a-struct.html">&larr; functions inside a struct</a>
+  <a href="0006f-the-constructor.html">next: the constructor &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

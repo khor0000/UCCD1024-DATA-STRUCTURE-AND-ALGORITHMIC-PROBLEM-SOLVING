@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6b — Addresses behind the arrows</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 6b of the linked-list crash sequence · Detour: pointer-to-pointer</div>
+<h1>Addresses behind the arrows</h1>
+
+<p>Lesson 6 showed <code>n1</code>, <code>n2</code>, <code>n3</code> as separate boxes from the Node boxes they point to — same two-box shape Lesson 1 used for <code>x</code>/<code>p</code>. This lesson goes one level deeper: tracing exactly which address moves where when you write <code>n1-&gt;next = n2;</code>, one step at a time.</p>
+
+<h2>n1 is not the box — it points at the box</h2>
+
+<p><code>Node *n1 = new Node(10);</code> creates <em>two</em> things, not one: the Node box itself (wherever <code>new</code> found room for it), and the variable <code>n1</code>, which lives somewhere else entirely and simply holds that box's address.</p>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x600</div>
+    <div class="cell"><span class="next">0x500</span></div>
+    <div class="addr" style="margin-top:.3rem">n1</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x500</div>
+    <div class="cell"><span class="item">10</span><span class="next">?</span></div>
+    <div class="addr" style="margin-top:.3rem">box1</div>
+  </div>
+</div>
+
+<p><code>n1</code> lives at address <code>0x600</code> and holds <code>0x500</code>. The Node box lives at <code>0x500</code> and holds <code>10</code> and an empty <code>next</code>. Two boxes, two addresses — exactly Lesson 1's picture, just with a whole Node on the far end instead of a single <code>int</code>.</p>
+
+<p><code>n2</code> is built the same way — its own separate variable, holding the address of a second, separate Node box:</p>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x604</div>
+    <div class="cell"><span class="next">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">n2</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">box2</div>
+  </div>
+</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — what does the variable <code>n1</code> itself hold, as a value?</p>
+  <button class="opt">The number 10</button>
+  <button class="opt" data-correct>The address of box1, 0x500</button>
+  <button class="opt">Its own address, 0x600</button>
+  <div class="feedback good" data-feedback-good>Right — n1's job is to hold the address of the box it points to, not the box's contents, and not its own address.</div>
+  <div class="feedback bad" data-feedback-bad>n1 is a pointer — its value is an address. Specifically, the address of the box it points at (0x500), not its own location or the data inside that box.</div>
+</div>
+
+<h2>Now trace <code>n1->next = n2;</code> as address movements</h2>
+
+<p>Three steps, in order:</p>
+
+<ol>
+<li>Look up <code>n1</code>'s value → <code>0x500</code>. That's "go to box1."</li>
+<li>Look up <code>n2</code>'s value → <code>0x520</code>. That's the number about to get copied — <strong>not</strong> n2's own address (0x604), n2's <em>value</em>.</li>
+<li>Store <code>0x520</code> into box1's <code>next</code> field.</li>
+</ol>
+
+<div class="diagram">
+  <div class="node">
+    <div class="addr">0x500</div>
+    <div class="cell"><span class="item">10</span><span class="next highlight">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">box1</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">box2</div>
+  </div>
+</div>
+
+<p>box1's <code>next</code> now holds <code>0x520</code> — box2's address. It never touches <code>0x604</code> (where the variable <code>n2</code> itself lives). That number was never relevant to this assignment at all.</p>
+
+<div class="note"><strong>Why <code>&amp;n2</code> would be wrong here:</strong> <code>&amp;n2</code> means "the address of the variable n2," which is <code>0x604</code> — the location of a pointer variable, not a Node. Writing <code>0x604</code> into box1's <code>next</code> would make box1 "point at" a spot in memory that holds a pointer, not a Node — wrong type, wrong place, and not what you want to traverse into later.</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — using the same addresses (n1@0x600 holds 0x500, n2@0x604 holds 0x520, n3@0x608 holds 0x540), what value ends up in box2's <code>next</code> after <code>n2-&gt;next = n3;</code>?</p>
+  <button class="opt">0x608 — n3's own address</button>
+  <button class="opt" data-correct>0x540 — the address of box3, which is n3's value</button>
+  <button class="opt">0x604 — n2's own address</button>
+  <div class="feedback good" data-feedback-good>Right — same three steps: go to box2 (n2's value, 0x520), read n3's value (0x540), store that into box2's next.</div>
+  <div class="feedback bad" data-feedback-bad>The value that moves is always the right-hand pointer's <em>value</em> (the address it holds), never its own address.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="value|its value|n2's value|the value in n2">
+  <p class="prompt">Second check — one short phrase: <code>n1-&gt;next = n2;</code> copies n2's ___, not n2's own address.</p>
+  <input type="text" placeholder="short phrase">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — you copy what n2 holds (its value), never where n2 itself sits.</div>
+  <div class="feedback bad" data-feedback-bad>Re-read step 2 above: what does "look up n2's value" mean, versus &amp;n2?</div>
+</div>
+
+<p class="ask-agent">If the box1/box2 addresses still don't feel concrete, ask for a second worked example before continuing to the List container.</p>
+
+<div class="nav">
+  <a href="0006-chaining-nodes.html">&larr; chaining Nodes by hand</a>
+  <a href="0006c-tracing-the-traversal-loop.html">next: tracing the traversal loop &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

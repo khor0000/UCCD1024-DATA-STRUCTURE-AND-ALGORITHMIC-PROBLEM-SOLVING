@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6 — Chaining Nodes by hand</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 6 of the linked-list crash sequence · Chaining</div>
+<h1>Chaining Nodes by hand</h1>
+
+<p>One Node is just a box. A <strong>linked list</strong> is nothing more than several Nodes where each one's <code>next</code> points at the next box — no List class involved yet. Build one by hand once, and every operation the real <code>List</code> class does will just be "this, but automated."</p>
+
+<div class="note"><strong>The word "chain" is used a lot from here on — it means exactly this: the Nodes themselves, linked by <code>next</code>, nothing else.</strong> It does <strong>not</strong> include the <code>List</code> struct you'll meet in lesson 7. The <code>List</code> is a separate little box that stands beside the chain and points into it (via <code>head</code>) — it is not one of the links.</div>
+
+<pre><code>Node *n1 = new Node(10);
+Node *n2 = new Node(20);
+Node *n3 = new Node(30);
+
+n1-&gt;next = n2;   // box 1's note now says "go to box 2"
+n2-&gt;next = n3;   // box 2's note says "go to box 3"
+n3-&gt;next = NULL; // box 3 is the last stop
+
+Node *head = n1;  // "head" just remembers where the chain starts</code></pre>
+
+<p>Before the diagram: <code>n1</code>, <code>n2</code>, <code>n3</code> are three separate <em>pointer variables</em>, and each one lives at its own address, separate from the Node box it points to — the same two-box shape as Lesson 1's <code>x</code>/<code>p</code>. Don't let the short code fool you into thinking <code>n1</code> "is" the box; it just points at one.</p>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x600</div>
+    <div class="cell"><span class="next">0x500</span></div>
+    <div class="addr" style="margin-top:.3rem">n1</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x500</div>
+    <div class="cell"><span class="item">10</span><span class="next">?</span></div>
+    <div class="addr" style="margin-top:.3rem">box1</div>
+  </div>
+</div>
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x604</div>
+    <div class="cell"><span class="next">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">n2</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next">?</span></div>
+    <div class="addr" style="margin-top:.3rem">box2</div>
+  </div>
+</div>
+<div class="diagram">
+  <div class="node highlight">
+    <div class="addr">0x608</div>
+    <div class="cell"><span class="next">0x540</span></div>
+    <div class="addr" style="margin-top:.3rem">n3</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x540</div>
+    <div class="cell"><span class="item">30</span><span class="next">?</span></div>
+    <div class="addr" style="margin-top:.3rem">box3</div>
+  </div>
+</div>
+
+<p>Running <code>n1-&gt;next = n2; n2-&gt;next = n3; n3-&gt;next = NULL;</code> copies addresses across, box to box (full step-by-step trace in the next lesson). Here's the result — three boxes, now actually chained:</p>
+
+<div class="diagram">
+  <div class="node">
+    <div class="addr">0x500</div>
+    <div class="cell"><span class="item">10</span><span class="next highlight">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">box1</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next highlight">0x540</span></div>
+    <div class="addr" style="margin-top:.3rem">box2</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x540</div>
+    <div class="cell"><span class="item">30</span><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">box3</div>
+  </div>
+</div>
+
+<p><code>head</code> is a fourth, separate pointer variable — a plain <code>Node *</code> that holds the same address <code>n1</code> holds (<code>0x500</code>), so you always know where the chain begins. Lose <code>head</code>, and there's no way back to any of these boxes: they're still in memory, but nothing points at them anymore. Keep that thought — it's exactly the bug you'll be hunting for in the lab test.</p>
+
+<h2>Walking the chain: traversal</h2>
+
+<p>To visit every box in order, start at <code>head</code> and keep following <code>next</code> until you hit <code>NULL</code>:</p>
+
+<pre><code>Node *cur = head;
+while (cur != NULL) {
+    cout &lt;&lt; cur-&gt;item &lt;&lt; " ";
+    cur = cur-&gt;next;
+}
+// prints: 10 20 30</code></pre>
+
+<p>This is the single most important pattern in the whole topic — nearly every List operation is a variation of "start somewhere, follow <code>next</code>, stop at some condition." <code>cur</code> is a temporary pointer you move along the chain; <code>head</code> itself never moves, or you'd lose the start.</p>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — after the code above, if you ran <code>head = head-&gt;next;</code>, what would happen?</p>
+  <button class="opt" data-correct>head now points at n2 — n1 is still in memory but nothing refers to it</button>
+  <button class="opt">n1 gets deleted automatically</button>
+  <button class="opt">Nothing — head can't be reassigned</button>
+  <div class="feedback good" data-feedback-good>Right — this is exactly how "remove the first node" works, and exactly why losing head accidentally is a real bug, not just a style issue.</div>
+  <div class="feedback bad" data-feedback-bad>head is a plain pointer variable — reassigning it just moves where it points. Nothing is deleted automatically, and it doesn't refuse the reassignment.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="null|NULL">
+  <p class="prompt">Second check — in the traversal <code>while</code> loop, what condition on <code>cur</code> stops the loop?</p>
+  <input type="text" placeholder="cur equals ___?">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — cur becomes NULL once you've walked off the last node.</div>
+  <div class="feedback bad" data-feedback-bad>Look at the while condition: <code>while (cur != ___)</code>.</div>
+</div>
+
+<p class="ask-agent">If "head doesn't move, cur does" isn't crisp yet, say so now — the rest of the lessons lean on it constantly.</p>
+
+<div class="nav">
+  <a href="0005c-why-nodes-need-the-heap.html">&larr; why Nodes need the heap</a>
+  <a href="0006b-addresses-behind-the-arrows.html">next: addresses behind the arrows &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2 — What is a struct?</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 2 of the linked-list crash sequence · Structs</div>
+<h1>What is a struct?</h1>
+
+<p>Right now, if you wanted to store one student's name and one student's mark, you'd use two separate variables: <code>name</code> and <code>mark</code>. That's fine for one student. A <strong>struct</strong> is just a way to staple several variables together into one labelled bundle, so they travel as a unit.</p>
+
+<div class="metaphor">
+<p><span class="term">Picture an ID card.</span> A blank ID card template has fields printed on it: Name, ID number, Photo. The template itself isn't anyone's card — it's the shape every card will follow. Once you print a real card for "Alex," you've filled in that shape with real values.</p>
+<p>A <strong>struct</strong> is the blank template. A <strong>variable of that struct type</strong> is one filled-in card.</p>
+</div>
+
+<pre><code>struct Student {
+    string name;
+    int    mark;
+};
+
+Student a;        // one filled-in card, blank for now
+a.name = "Alex";  // fill in the Name field
+a.mark = 88;      // fill in the Mark field
+
+cout &lt;&lt; a.name &lt;&lt; " scored " &lt;&lt; a.mark;   // Alex scored 88</code></pre>
+
+<p>The dot, <code>a.name</code>, means "on card <code>a</code>, read the Name field." That's the whole idea — no new symbol, no pointer involved yet, just a bundle of fields you reach into with a dot.</p>
+
+<h2>Struct vs. plain variable</h2>
+
+<table>
+<thead><tr><th></th><th>Plain variable</th><th>Struct</th></tr></thead>
+<tbody>
+<tr><td>Holds</td><td>one value</td><td>several named fields, together</td></tr>
+<tr><td>Declare a type first?</td><td>no — <code>int</code>, <code>string</code> already exist</td><td>yes — you define the shape with <code>struct</code> before using it</td></tr>
+<tr><td>Access a field</td><td>—</td><td><code>variable.field</code></td></tr>
+</tbody>
+</table>
+
+<div class="note">A struct can hold <em>any</em> type as a field — including another struct, an array, or (this is where it gets interesting, next lesson) a pointer. That last one is what makes a linked list possible at all.</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — given <code>struct Student { string name; int mark; }; Student a;</code>, how do you read Alex's mark after <code>a.mark = 88;</code>?</p>
+  <button class="opt" data-correct>a.mark</button>
+  <button class="opt">a-&gt;mark</button>
+  <button class="opt">mark.a</button>
+  <div class="feedback good" data-feedback-good>Right — a plain struct variable (not a pointer to one) always uses the dot.</div>
+  <div class="feedback bad" data-feedback-bad>Close, but <code>-&gt;</code> is for when you're holding a <em>pointer</em> to a struct, not the struct itself. <code>a</code> here is a plain variable, so it's a dot.</div>
+</div>
+
+<p class="ask-agent">If the "template vs. filled-in card" framing didn't land, tell your tutor — there are other angles (a cookie cutter vs. a cookie, a form vs. a filled-out form) before we move on.</p>
+
+<div class="nav">
+  <a href="0001-what-is-a-pointer.html">&larr; pointers</a>
+  <a href="0003-pointers-to-structs.html">next: pointers to structs &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

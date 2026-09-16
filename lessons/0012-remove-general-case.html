@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12 — remove: the general case</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 12 of the linked-list crash sequence · Remove (part 2 of 2)</div>
+<h1>remove: the general case</h1>
+
+<p>To remove a node that is <em>not</em> the head: walk to the node just before it, point that node <strong>past</strong> the target so the chain skips it, then hand the skipped node's memory back.</p>
+
+<div class="paper-task">
+  <strong class="title">Retrieval check &bull; before reading on</strong>
+  <p>From memory, no scrolling: write the five lines of the <code>if (from == 1)</code> branch of <code>remove</code>, in order. Then say which line is the "save" and why it must run first.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal</summary>
+  <pre><code>cur = head;
+head = head-&gt;next;
+count--;
+free(cur);
+return true;</code></pre>
+  <p><code>cur = head;</code> is the save. <code>head</code> is the only pointer to the doomed node; once <code>head</code> moves forward, that node is unreachable and there is nothing left to give <code>free()</code>. (<a href="0011-remove-position-one.html">Lesson 11</a>.)</p>
+</details>
+
+<h2>The whole shape of remove &mdash; four steps, always this order</h2>
+
+<ol>
+<li><strong>Check the position is real.</strong> <code>from</code> must be 1 to <code>count</code> &mdash; you can only remove a node that exists.</li>
+<li><strong>Walk to the node just before the target</strong> with <code>find(from-1)</code>. (Position 1 has no "before" &mdash; that was Lesson 11.)</li>
+<li><strong>Re-route.</strong> The node before the target points past it, to whatever came after.</li>
+<li><strong>Hand the memory back</strong> with <code>free()</code> &mdash; after reading anything you still need from the doomed node.</li>
+</ol>
+
+<p>This lesson is steps 2&ndash;4 for <strong>positions 2 to count</strong>. Here is the whole function, with this lesson's part boxed:</p>
+
+<pre><code>bool List::remove(int from) {
+    Node *pre, *cur;
+
+    if (from &lt; 1 || from &gt; count) return false;   // step 1
+
+    if (from == 1) {                              // Lesson 11
+        cur = head;
+        head = head-&gt;next;
+        count--;
+        free(cur);
+        return true;
+    }
+
+    // normal case   &larr;&larr;&larr; THIS LESSON
+    pre = find(from-1);      // node right before the target
+    cur = pre-&gt;next;         // the target itself
+    pre-&gt;next = cur-&gt;next;   // pre skips straight over cur
+    free(cur);              // give cur's memory back
+    count--;
+    return true;
+}</code></pre>
+
+<p class="note">This is copied line-for-line from Lecture 4's <code>List.cpp</code>. Reproduce this order on paper.</p>
+
+<div class="metaphor">
+<p><span class="term">Taking one link out of the middle of a chain.</span> Hold the link just before the one you want gone (<code>pre</code>). Unclip its far end and clip it instead onto whatever the unwanted link was joined to (<code>cur-&gt;next</code>). The unwanted link now dangles free, joined to nothing &mdash; safe to throw away.</p>
+</div>
+
+<h2>Why <code>find(from-1)</code>, not <code>find(from)</code></h2>
+
+<p>A singly linked list has forward arrows only. To make the chain skip a node, you must change the <code>next</code> field of the node <em>before</em> it &mdash; that is the only node whose arrow points at the target. So you walk to <code>from-1</code>, not <code>from</code>. Same reason <code>insert</code>'s general case used <code>find(at-1)</code>.</p>
+
+<h2>Tracing <code>remove(2)</code> on <code>10 &rarr; 20 &rarr; 30</code></h2>
+
+<p><code>head</code> (own address <code>0x900</code>) holds <code>0x500</code>. Step through the four pointer lines:</p>
+
+<div class="stepper" data-stepper>
+  <script type="application/json">
+  {
+    "code": [
+      "pre = find(from-1);   // find(1)",
+      "cur = pre->next;",
+      "pre->next = cur->next;",
+      "free(cur);            // count-- runs right after"
+    ],
+    "stages": [
+      { "line": -1, "caption": "Before any line runs. List is 10 -> 20 -> 30, count 3. We want position 2 (node 20) gone.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 0, "copy": {"from":"ptr:head","to":"ptr:pre"}, "caption": "pre = find(1) walks to position 1 -- the head -- so pre gets 0x500. pre now points at node 10, the node just before the target.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"pre","addr":"0x904","val":"0x500"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 1, "copy": {"from":"node:0x500.next","to":"ptr:cur"}, "caption": "cur = pre->next reads node 10's next cell (0x520) into cur. cur now points at node 20 -- the node being removed.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"pre","addr":"0x904","val":"0x500"}, {"name":"cur","addr":"0x908","val":"0x520"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 2, "copy": {"from":"node:0x520.next","to":"node:0x500.next"}, "caption": "pre->next = cur->next. First READ cur->next (0x540), then store it in node 10's next cell. Node 10 now points straight at node 30. No path from head reaches node 20 any more -- only cur does.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"pre","addr":"0x904","val":"0x500"}, {"name":"cur","addr":"0x908","val":"0x520"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x540"}, {"addr":"0x520","item":"20","next":"0x540","note":"only cur reaches it"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 3, "caption": "free(cur) hands node 20's memory back -- the box is gone. cur still holds 0x520 as a value, but that address is no longer yours: cur is dangling. count-- makes count 2. List is 10 -> 30.",
+        "ptrs": [ {"name":"head","addr":"0x900","val":"0x500"}, {"name":"pre","addr":"0x904","val":"0x500"}, {"name":"cur","addr":"0x908","val":"0x520","note":"dangling -- freed address"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] }
+    ]
+  }
+  </script>
+</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Read cur-&gt;next Before free(cur)</strong>
+  <p><code>pre-&gt;next = cur-&gt;next;</code> must run <em>before</em> <code>free(cur);</code>. It needs to read the doomed node's <code>next</code> field to know where <code>pre</code> should point. Free the node first and that field is gone &mdash; reading it is a use-after-free, and the chain past the removed node is lost.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>pre-&gt;next = cur-&gt;next;</code><br><code>free(cur);</code></td>
+      <td><code>free(cur);</code><br><code>pre-&gt;next = cur-&gt;next;</code> <span style="opacity:.6">// reads freed memory</span></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div class="note"><strong>You might reasonably wonder: Lesson 11 wrote <code>count--</code> before <code>free</code>, this one writes it after &mdash; which is right?</strong> Both. They are copied straight from Lecture 4, which genuinely orders them differently in the two branches. It does not matter: <code>count</code> is a plain number living in the <code>List</code> box, not inside the node. <code>free(cur)</code> only touches the node. So <code>count--</code> and <code>free(cur)</code> never interfere, in either order. The order that <em>does</em> matter is the one in the trap above &mdash; the read before the free.</div>
+
+<h2>Position 1 vs the general case &mdash; side by side</h2>
+
+<table>
+  <thead><tr><th></th><th>Position 1 (Lesson 11)</th><th>General case (this lesson)</th></tr></thead>
+  <tbody>
+    <tr><td>Pointers used</td><td><code>cur</code> only</td><td><code>pre</code> and <code>cur</code></td></tr>
+    <tr><td>Walk first?</td><td>No &mdash; head has no "before"</td><td>Yes &mdash; <code>pre = find(from-1)</code></td></tr>
+    <tr><td>What re-routes</td><td><code>head = head-&gt;next;</code></td><td><code>pre-&gt;next = cur-&gt;next;</code></td></tr>
+    <tr><td>The node to free</td><td><code>cur</code> (was <code>head</code>)</td><td><code>cur</code> (was <code>pre-&gt;next</code>)</td></tr>
+  </tbody>
+</table>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check &mdash; to remove the node at position <em>from</em>, which position do you pass to <code>find</code> to get <code>pre</code>?</p>
+  <button class="opt">from</button>
+  <button class="opt" data-correct>from - 1</button>
+  <button class="opt">from + 1</button>
+  <div class="feedback good" data-feedback-good>Right &mdash; pre must be the node whose next arrow points at the target, which is one position earlier.</div>
+  <div class="feedback bad" data-feedback-bad>The only node whose next field points at the target sits one position before it. So which argument?</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="before|before free|before free(cur)|before freeing|before the free">
+  <p class="prompt">Second check &mdash; relative to <code>free(cur);</code>, does <code>pre-&gt;next = cur-&gt;next;</code> run before or after?</p>
+  <input type="text" placeholder="before or after?">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly &mdash; read cur-&gt;next while cur is still alive, then free it.</div>
+  <div class="feedback bad" data-feedback-bad>After the free, cur-&gt;next reads memory you no longer own. Which order avoids that?</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book</strong>
+  <p>Close this page. On paper, write the <strong>whole</strong> <code>bool List::remove(int from)</code> from a blank line &mdash; the guard, the <code>from == 1</code> branch, and the general case. Then draw the list <code>5 &rarr; 8 &rarr; 12 &rarr; 20</code> after <code>remove(3)</code>, box by box.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+  <pre><code>bool List::remove(int from) {
+    Node *pre, *cur;
+
+    if (from &lt; 1 || from &gt; count) return false;
+
+    if (from == 1) {
+        cur = head;
+        head = head-&gt;next;
+        count--;
+        free(cur);
+        return true;
+    }
+
+    pre = find(from-1);
+    cur = pre-&gt;next;
+    pre-&gt;next = cur-&gt;next;
+    free(cur);
+    count--;
+    return true;
+}</code></pre>
+  <p>After <code>remove(3)</code> on <code>5 &rarr; 8 &rarr; 12 &rarr; 20</code>: <code>pre</code> stops at node <code>8</code>, <code>cur</code> at node <code>12</code>. <code>8</code>'s <code>next</code> becomes <code>20</code>'s address. Node <code>12</code> is freed. List is <code>5 &rarr; 8 &rarr; 20</code>, count 3.</p>
+</details>
+
+<p class="ask-agent">Ask your tutor for another <code>remove</code> position to trace if the read-before-free order has not stuck. Next in the plan: the queue.</p>
+
+<div class="nav">
+  <a href="0011-remove-position-one.html">&larr; remove &mdash; position 1</a>
+  <a href="0013-draw-the-state-practice.html">next: draw-the-state practice &rarr;</a>
+</div>
+
+<script src="../assets/stepper.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

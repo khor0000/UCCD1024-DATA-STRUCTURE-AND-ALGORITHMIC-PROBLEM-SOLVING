@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 24e — What does the function compute? (Q4c)</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  .step { padding:.2rem 0 .2rem 1.1rem; margin:1.3rem 0; border-left:1px solid var(--border); }
+  .step h4 { margin:.2rem 0 .4rem; font-size:.95rem; }
+  .step .found { color:var(--cyan-ink); font-weight:600; }
+</style>
+</head>
+<body>
+
+<div class="eyebrow">Lesson 24e · Recursion 5 of 5 · Midterm Q4c</div>
+<h1>What does the function compute? (Q4c)</h1>
+
+<div class="paper-task">
+  <strong class="title">Retrieval check &bull; 20 seconds</strong>
+  <p>From <a href="0024-reading-recursion.html">Lesson 24</a>: what is a &ldquo;base case&rdquo;, in one line?</p>
+</div>
+<details class="reveal">
+  <summary>reveal</summary>
+  <p>The branch that ends the function <em>without</em> calling itself &mdash; it handles the input small enough to answer directly.</p>
+</details>
+
+<p>Q4c doesn&rsquo;t want a trace of every value. It wants the <strong>purpose</strong>, in one sentence. Three steps &mdash; and below, each step run against a real function so you see how the sentence is built, not just handed to you.</p>
+
+<h2>The function</h2>
+
+<pre><code>int m(int a[], int n) {
+    if (n == 1) return a[0];
+    int r = m(a, n - 1);
+    if (a[n - 1] &gt; r) return a[n - 1];
+    return r;
+}</code></pre>
+
+<div class="step">
+  <h4>Step 1 &mdash; find the base case, and read what it returns</h4>
+  <p><strong>Which line is the base case?</strong> The one that returns without calling <code>m</code> again. That is <code>if (n == 1) return a[0];</code>. (The line <code>int r = m(a, n - 1);</code> calls <code>m</code>, so it is <em>not</em> the base case.)</p>
+  <p><strong>What is &ldquo;the smallest input&rdquo;?</strong> It is whatever makes that <code>if</code> true. The condition is <code>n == 1</code>, so the smallest input is <strong>an array with just 1 element</strong>. Not <code>n = 0</code> &mdash; read the actual condition, it says <code>1</code>.</p>
+  <p><strong>What does it return for that input?</strong> <code>a[0]</code> &mdash; the only element.</p>
+  <p class="found">So far: &ldquo;for a 1-element array, the answer is that element.&rdquo;</p>
+</div>
+
+<div class="step">
+  <h4>Step 2 &mdash; find the recursive step, and read the one thing it does with the result</h4>
+  <p>The recursive step is <code>int r = m(a, n - 1);</code> &mdash; it asks <code>m</code> for the answer to the <strong>first <code>n&minus;1</code> elements</strong> and stores it in <code>r</code>.</p>
+  <p>Then it does <strong>one</strong> thing with <code>r</code>:</p>
+  <pre><code>if (a[n - 1] &gt; r) return a[n - 1];   // last element bigger? return it
+return r;                            // otherwise keep r</code></pre>
+  <p>In words: compare <code>r</code> (the answer for everything before the last element) with <code>a[n-1]</code> (the last element), and <strong>keep whichever is bigger</strong>. The operation is <code>&gt;</code>, keep-the-bigger.</p>
+  <p class="found">The step: &ldquo;take the answer for the elements before the last one, compare it to the last one, keep the larger.&rdquo;</p>
+</div>
+
+<div class="step">
+  <h4>Step 3 &mdash; say it in terms of the whole array</h4>
+  <p>Seed (Step 1): a single element. Repeated action (Step 2): each level folds in one more element by keeping the bigger. Do that all the way up and you have compared every element and kept the biggest.</p>
+  <p class="found"><strong>&ldquo;It returns the largest (maximum) value among the first <code>n</code> elements of array <code>a</code>.&rdquo;</strong></p>
+</div>
+
+<h2>Watch <code>m(a, 3)</code> actually run</h2>
+
+<p>The three steps tell you <em>what to look for</em>. This shows it happening, on <code>a = {4, 9, 2}</code> &mdash; so <code>a[0] = 4</code>, <code>a[1] = 9</code>, <code>a[2] = 2</code>. Same rules as the earlier walkthroughs: a copy appears when its call runs, and disappears when it returns &mdash; but this time each copy also <strong>hands a number back</strong> to the one that called it.</p>
+
+<div data-recwalk="m"></div>
+
+<div class="note"><strong>What the run showed.</strong> The deepest copy (<code>m(a, 1)</code>) returned the single element <code>4</code> &mdash; the seed. Every copy above it did the same one thing: compare its element to the number from below, keep the bigger. <code>4</code> &rarr; <code>9</code> &rarr; <code>9</code>. The answer that comes out is the biggest element. That is why <code>m</code> computes the maximum.</div>
+
+<h2>The shortcut once you&rsquo;ve done a few</h2>
+
+<p>The <strong>operation in the step</strong> usually names the whole function:</p>
+
+<table>
+  <thead><tr><th>Step does&hellip;</th><th>Function computes&hellip;</th></tr></thead>
+  <tbody>
+    <tr><td><code>+</code> the element</td><td>the sum</td></tr>
+    <tr><td><code>&gt;</code> keep bigger</td><td>the maximum</td></tr>
+    <tr><td><code>&lt;</code> keep smaller</td><td>the minimum</td></tr>
+    <tr><td><code>* n</code></td><td>the factorial</td></tr>
+    <tr><td><code>r + 1</code></td><td>a count / a length</td></tr>
+    <tr><td>a <code>cout</code></td><td>&ldquo;prints the elements in &hellip; order&rdquo;</td></tr>
+  </tbody>
+</table>
+
+<h2>Drills &mdash; closed book, on paper</h2>
+
+<div class="paper-task">
+  <strong class="title">Drill 3 &bull; describe</strong>
+  <p>Run the three steps out loud, then write one sentence: what does <code>f(n)</code> compute for a positive integer <code>n</code>?</p>
+<pre><code>int f(int n) {
+    if (n == 1) return 1;
+    return n + f(n - 1);
+}</code></pre>
+</div>
+<details class="reveal">
+  <summary>reveal</summary>
+  <p>Step 1: base case <code>n == 1</code> &rarr; smallest input is <code>n = 1</code>, returns <code>1</code>. Step 2: recursive step <code>f(n - 1)</code> gives the answer for everything below <code>n</code>; the one thing done with it is <code>n +</code> &mdash; add <code>n</code>. Step 3: adding each value from 1 up.<br>
+  <strong>&ldquo;It returns the sum <code>1 + 2 + 3 + &hellip; + n</code>&rdquo;</strong> (the sum of all integers from 1 to <code>n</code>).</p>
+</details>
+
+<div class="paper-task">
+  <strong class="title">Drill 4 &bull; describe</strong>
+  <p>Same three steps. What does <code>c(a, n)</code> compute?</p>
+<pre><code>int c(int a[], int n) {
+    if (n == 0) return 0;
+    int r = c(a, n - 1);
+    if (a[n - 1] == 0) return r + 1;
+    return r;
+}</code></pre>
+</div>
+<details class="reveal">
+  <summary>reveal</summary>
+  <p>Step 1: base case <code>n == 0</code> &rarr; smallest input is an empty array, returns <code>0</code>. Step 2: <code>r</code> is the answer for the first <code>n&minus;1</code> elements; the one thing done &mdash; <code>r + 1</code> <em>when the last element is 0</em>, otherwise pass <code>r</code> through unchanged. Step 3: add 1 for every element equal to 0.<br>
+  <strong>&ldquo;It returns how many of the first <code>n</code> elements of <code>a</code> are equal to 0&rdquo;</strong> (it counts the zeros).</p>
+</details>
+
+<h2>Primary source</h2>
+
+<p>If one part still feels shaky, watch <strong>Harvard CS50&rsquo;s recursion segment</strong> &mdash; free, ~15 minutes, same &ldquo;each call is its own frame&rdquo; model: <a href="https://cs50.harvard.edu/x/2024/notes/2/#recursion">cs50.harvard.edu/x &mdash; Recursion</a>. For the exam skill, tracing more examples by hand beats watching more video.</p>
+
+<p class="ask-agent">Bring all four drill answers (1&ndash;2 from Lesson 24c, 3&ndash;4 here) and I&rsquo;ll mark them line by line. Tell me which step felt shaky and I&rsquo;ll fix that lesson.</p>
+
+<div class="nav">
+  <a href="0024d-recursion-vs-loops.html">&larr; Lesson 24d &mdash; recursion vs loops</a>
+  <a href="../reference/0001-mistake-ledger.html">tonight: the mistake ledger &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/recwalk.js"></script>
+<script>
+(function () {
+  var V = function (n) { return '<span class="v">' + n + '</span>'; };
+
+  // m(a, v): returns a number. lines: base / r = m(a,v-1) / if bigger return / return r.
+  // child nests after line 1 (the recursive call).
+  function mf(v, s, c, paused) {
+    return {
+      title: 'copy m(a, ' + v + ')  &middot;  n = ' + v, paused: !!paused, callAfter: 1,
+      lines: [
+        { t: 'if (' + V(v) + ' == 1) return a[0];', s: s[0] || '', c: c[0] || '' },
+        { t: 'int r = m(a, ' + V(v - 1) + ');', s: s[1] || '', c: c[1] || '' },
+        { t: 'if (a[' + V(v - 1) + '] &gt; r) return a[' + V(v - 1) + '];', s: s[2] || '', c: c[2] || '' },
+        { t: 'return r;', s: s[3] || '', c: c[3] || '' }
+      ]
+    };
+  }
+  var pausedM = function (v) { return mf(v, ['dim', 'frozen', '', ''], ['', '&#9208; paused, waiting for m(a, ' + (v - 1) + ')', '', ''], true); };
+
+  var M_STEPS = [
+    { cap: 'The call is <code>m(a, 3)</code> with <code>a = {4, 9, 2}</code> &mdash; so <code>a[0]=4</code>, <code>a[1]=9</code>, <code>a[2]=2</code>. Let&rsquo;s watch what it hands back.', frames: [] },
+    { cap: 'Copy <code>m(a, 3)</code>, <code>n = 3</code>. Step 1 &mdash; the base case: is <code>n == 1</code>? No.',
+      frames: [ mf(3, ['now', '', '', ''], ['3 == 1 ? no &mdash; not the base case', '', '', '']) ] },
+    { cap: 'Step 2 &mdash; the recursive step. <code>r = m(a, 2)</code>: ask for the answer to the first 2 elements, and pause until it returns a number.',
+      frames: [ mf(3, ['dim', 'now', '', ''], ['', 'call m(a, 2); pause until it returns a value', '', '']) ] },
+    { cap: 'Copy <code>m(a, 2)</code>, nested inside. <code>n = 2</code>, not 1 &mdash; not the base case.',
+      frames: [ pausedM(3), mf(2, ['now', '', '', ''], ['2 == 1 ? no', '', '', '']) ] },
+    { cap: '<code>m(a, 2)</code> does its own recursive step: <code>r = m(a, 1)</code>. Pause.',
+      frames: [ pausedM(3), mf(2, ['dim', 'now', '', ''], ['', 'call m(a, 1); pause', '', '']) ] },
+    { cap: 'Copy <code>m(a, 1)</code>, <code>n = 1</code>. Now <code>n == 1</code> is TRUE &mdash; the base case fires. It returns <code>a[0]</code>, which is <strong>4</strong>. This is the seed: for one element, the answer is that element.',
+      frames: [ pausedM(3), pausedM(2),
+        mf(1, ['now', 'dim', 'dim', 'dim'], ['1 == 1 &rarr; TRUE &mdash; return a[0] = 4', 'never runs', 'never runs', 'never runs']) ] },
+    { cap: '<code>m(a, 1)</code> returned <strong>4</strong>. <code>m(a, 2)</code> un-pauses: its <code>r</code> is now <strong>4</strong>.',
+      frames: [ pausedM(3), mf(2, ['dim', 'now', '', ''], ['', 'm(a, 1) returned 4  &rarr;  r = 4', '', '']) ] },
+    { cap: 'The &ldquo;one thing done with <code>r</code>&rdquo;: compare <code>a[1]</code> with <code>r</code>. <code>a[1]</code> is 9, <code>r</code> is 4. Is 9 &gt; 4? Yes &mdash; return the bigger: <strong>9</strong>.',
+      frames: [ pausedM(3), mf(2, ['dim', 'dim', 'now', ''], ['', 'r = 4', 'a[1] is 9, r is 4 &mdash; 9 &gt; 4 ? yes &rarr; return 9', '']) ] },
+    { cap: '<code>m(a, 2)</code> returned <strong>9</strong>. <code>m(a, 3)</code> un-pauses: its <code>r</code> is now <strong>9</strong>.',
+      frames: [ mf(3, ['dim', 'now', '', ''], ['', 'm(a, 2) returned 9  &rarr;  r = 9', '', '']) ] },
+    { cap: 'Compare <code>a[2]</code> with <code>r</code>. <code>a[2]</code> is 2, <code>r</code> is 9. Is 2 &gt; 9? No &mdash; skip this line.',
+      frames: [ mf(3, ['dim', 'dim', 'now', ''], ['', 'r = 9', 'a[2] is 2, r is 9 &mdash; 2 &gt; 9 ? no &rarr; skip', '']) ] },
+    { cap: 'Fall through to the last line: <code>return r</code>. <code>m(a, 3)</code> returns <strong>9</strong>.',
+      frames: [ mf(3, ['dim', 'dim', 'dim', 'now'], ['', 'r = 9', '(2 was not &gt; 9)', 'return r &rarr; this copy returns 9']) ] },
+    { cap: 'Done. <code>m(a, 3)</code> returned <span class="out">9</span> &mdash; the largest value in <code>{4, 9, 2}</code>. Each level kept the bigger of (its own element, the answer from below): 4 &rarr; 9 &rarr; 9. So <code>m</code> computes the <strong>maximum</strong>.', frames: [] }
+  ];
+
+  mountRecwalk(document.querySelector('[data-recwalk="m"]'), M_STEPS);
+})();
+</script>
+</body>
+</html>

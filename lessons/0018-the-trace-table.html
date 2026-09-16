@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18 — The trace table</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Day 2 · Midterm Q1a — "given code, state the output"</div>
+<h1>The trace table</h1>
+
+<p><strong>To find a loop's output on paper, draw a table with one column per variable and one row per pass. Fill it in one row at a time. Never do it in your head.</strong></p>
+
+<p>That is the lesson. The rest is the method and one worked example.</p>
+
+<div class="note">
+<p><strong>Why this is worth a lesson when you already know loops.</strong> Q1a does not test whether you understand <code>for</code>. It tests whether you can produce the exact printed output without a compiler. People lose these marks by being <em>too fast</em> — they read the loop, feel confident, and are off by one. The table removes the guessing. It is slower, and that is the point.</p>
+</div>
+
+<h2>The method</h2>
+
+<ol>
+<li>One column for every variable the loop touches. One extra column: <strong>OUTPUT</strong>.</li>
+<li>Write the starting values in row 0, before the loop runs.</li>
+<li>For each pass: check the condition first. If false, stop. If true, run the body and add a row.</li>
+<li><strong>Write down every single <code>cout</code>, exactly as it prints</strong> — including whether there is a space, a newline, or nothing between items.</li>
+<li>Your answer is the OUTPUT column, read top to bottom.</li>
+</ol>
+
+<h2>Worked example</h2>
+
+<pre><code>int total = 0;
+for (int i = 1; i &lt;= 4; i++) {
+    total = total + i;
+    cout &lt;&lt; i &lt;&lt; ":" &lt;&lt; total &lt;&lt; " ";
+}
+cout &lt;&lt; "end";</code></pre>
+
+<p>Three columns: <code>i</code>, <code>total</code>, OUTPUT.</p>
+
+<table>
+<thead><tr><th>Pass</th><th><code>i</code></th><th>condition <code>i &lt;= 4</code></th><th><code>total</code></th><th>OUTPUT this pass</th></tr></thead>
+<tbody>
+<tr><td>start</td><td>1</td><td>—</td><td>0</td><td></td></tr>
+<tr><td>1</td><td>1</td><td>true</td><td>1</td><td><code>1:1&nbsp;</code></td></tr>
+<tr><td>2</td><td>2</td><td>true</td><td>3</td><td><code>2:3&nbsp;</code></td></tr>
+<tr><td>3</td><td>3</td><td>true</td><td>6</td><td><code>3:6&nbsp;</code></td></tr>
+<tr><td>4</td><td>4</td><td>true</td><td>10</td><td><code>4:10&nbsp;</code></td></tr>
+<tr><td>5</td><td>5</td><td><strong>false</strong> — stop</td><td>10</td><td></td></tr>
+</tbody>
+</table>
+
+<p>Read the OUTPUT column downward, then the line after the loop:</p>
+
+<pre><code>1:1 2:3 3:6 4:10 end</code></pre>
+
+<h3>The row that earns the marks</h3>
+
+<p><strong>Row 5 is the one people skip.</strong> The loop does not stop after the body runs with <code>i</code> at 4 — it increments to 5, tests, <em>then</em> stops. Writing that row down is what stops off-by-one errors.</p>
+
+<div class="metaphor">
+<p><span class="term">A turnstile you must walk into to find out it's locked.</span> You don't stop one step early because you guessed it would be locked. You step up, it refuses, and only then do you turn around. The failed check is a real event. Give it a row.</p>
+</div>
+
+<h2>When the tested variable changes inside the body</h2>
+
+<p>The example above is the easy shape: <code>i</code> is a counter, and the <code>for</code> header changes it. Q1a also uses a harder shape — <strong>the variable in the condition is changed by the body itself</strong>:</p>
+
+<pre><code>int n = 20;
+while (n &gt; 1) {
+    n = n / 2;
+    cout &lt;&lt; n &lt;&lt; " ";
+}</code></pre>
+
+<p>Here is the trap, and it is the most common way this question is failed:</p>
+
+<div class="metaphor">
+<p><span class="term">The condition asks what <em>is</em>, never what <em>will be</em>.</span> It is a doorman checking your ticket as you arrive. He does not care what your ticket will say in a minute. If it is valid <em>now</em>, you go in — even if going in is what makes it invalid.</p>
+</div>
+
+<p>So when <code>n</code> is 2, the check is <code>2 &gt; 1</code>. That is <strong>true</strong>. The body runs, <code>n</code> becomes 1, and <code>1</code> is printed. It is very tempting to stop at 2 by reasoning "the next one would be 1, and 1 isn't greater than 1" — <strong>that reasoning tests the wrong value and costs the mark.</strong></p>
+
+<p><strong>This is exactly why the table has a condition column.</strong> Filling that column makes you write down the value being tested, so you cannot substitute a prediction for it. Two rules follow:</p>
+
+<ul>
+<li><strong>Copy <code>n</code>'s value into the row <em>before</em> you run the body.</strong> That is the value the condition sees.</li>
+<li><strong>Only stop when you have written a row whose condition column says false.</strong> If you stopped without writing that row, you have not finished the trace.</li>
+</ul>
+
+<table>
+<thead><tr><th>Pass</th><th><code>n</code> at the top</th><th><code>n &gt; 1</code>?</th><th><code>n</code> after body</th><th>OUTPUT</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>20</td><td>true</td><td>10</td><td><code>10&nbsp;</code></td></tr>
+<tr><td>2</td><td>10</td><td>true</td><td>5</td><td><code>5&nbsp;</code></td></tr>
+<tr><td>3</td><td>5</td><td>true</td><td>2</td><td><code>2&nbsp;</code></td></tr>
+<tr><td>4</td><td>2</td><td><strong>true</strong> — 2 is still &gt; 1</td><td>1</td><td><code>1&nbsp;</code></td></tr>
+<tr><td>5</td><td>1</td><td><strong>false</strong> — stop</td><td>—</td><td></td></tr>
+</tbody>
+</table>
+
+<p>Output: <code>10 5 2 1</code>. Note <code>5 / 2</code> gives <strong>2</strong>, not 2.5 — <code>n</code> is an <code>int</code>, so the remainder is thrown away. Integer division appears in almost every halving loop they set.</p>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Testing The Next Value</strong>
+  <p>The condition is checked against the variable's value <strong>right now</strong>, at the top of the loop &mdash; not against the value the body is about to give it. Stopping one pass early is the most common way Q1a is failed.</p>
+  <p><strong>The stopping rule:</strong> you have not finished a trace until you have written a row whose condition column reads <em>false</em>.</p>
+  <table>
+    <thead><tr><th>Correct reasoning (earns marks)</th><th>Incorrect reasoning (loses marks)</th></tr></thead>
+    <tbody>
+      <tr><td>"n is 2. Is 2 &gt; 1? Yes &mdash; run the body."</td><td>"n would become 1 next, so stop now."</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Three traps Q1a uses</h2>
+
+<table>
+<thead><tr><th>Trap</th><th>What it looks like</th><th>What to do</th></tr></thead>
+<tbody>
+<tr><td><strong>Where the increment happens</strong></td><td><code>i++</code> at the top of the body vs the bottom</td><td>Follow the written order. Do not assume the <code>for</code> pattern.</td></tr>
+<tr><td><strong>Value used before or after change</strong></td><td><code>cout &lt;&lt; i++</code> vs <code>cout &lt;&lt; ++i</code></td><td><code>i++</code> prints the old value. <code>++i</code> prints the new one.</td></tr>
+<tr><td><strong>Testing the next value instead of the current one</strong></td><td>a loop whose body changes the tested variable</td><td>Write the value into the row before running the body. Stop only on a written false row.</td></tr>
+<tr><td><strong>Spacing and newlines</strong></td><td><code>" "</code> vs <code>endl</code> vs nothing</td><td>Copy the separators exactly. Output is marked character by character.</td></tr>
+</tbody>
+</table>
+
+<p>You might reasonably wonder: <em>do I really lose a mark for a missing space?</em> Assume yes and write it correctly. The table costs you nothing once you are used to it.</p>
+
+<h2>Quick check</h2>
+
+<div class="quiz short" data-quiz-short data-answer="2 4 6|2 4 6 |246">
+<p class="prompt">Trace it on paper first, then type the exact output:<br>
+<code>int i = 2;<br>
+while (i &lt; 8) { cout &lt;&lt; i &lt;&lt; " "; i = i + 2; }</code></p>
+<input type="text" placeholder="type the exact output">
+<button>Check</button>
+<div class="feedback good" data-feedback-good>Correct. <code>i</code> reaches 8, the condition is false, and 8 is never printed. That last row is the one worth writing down.</div>
+<div class="feedback bad" data-feedback-bad>Add one more row to your table for the pass where the condition fails. Does that pass print anything?</div>
+</div>
+
+<h2>Blank paper</h2>
+
+<p class="ask-agent"><strong>Close this file.</strong> Draw a full trace table — columns, one row per pass, including the final failed check — for this:</p>
+
+<pre><code>int n = 10;
+int c = 0;
+while (n &gt; 1) {
+    n = n / 2;
+    c++;
+    cout &lt;&lt; n &lt;&lt; "," &lt;&lt; c &lt;&lt; " ";
+}</code></pre>
+
+<p class="ask-agent">Send me the table, not just the answer. I mark the table. <strong>Note <code>n</code> is an <code>int</code></strong> — integer division throws away the remainder. And if anything here left you with a question, say so; that is a fault in this lesson and I will fix the lesson.</p>
+
+<div class="note">
+<p><strong>Primary source.</strong> <a href="https://en.cppreference.com/w/cpp/language/for">cppreference — <code>for</code> loop</a>. Read only the "Explanation" box, which spells out the exact order: init, condition, body, increment.</p>
+</div>
+
+<div class="nav">
+<a href="0017-static-vs-dynamic.html">← 17 · Static vs dynamic</a>
+<a href="0019-do-while.html">19 · do-while →</a>
+</div>
+
+<style>
+.stage-label { font-size: 0.9rem; color: var(--ink-soft); margin-bottom: 0.35rem; }
+</style>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

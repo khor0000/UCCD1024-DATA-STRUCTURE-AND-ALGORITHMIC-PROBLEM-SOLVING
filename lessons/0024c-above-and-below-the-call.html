@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 24c — Above the call vs below the call</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  .twocol { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1.2rem 0; }
+  .twocol > div { border:1px solid var(--border); padding:.8rem 1rem; }
+  .twocol h4 { margin:.1rem 0 .5rem; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; font-family:var(--mono); color:var(--ink-soft); }
+  @media (max-width:640px){ .twocol { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="eyebrow">Lesson 24c · Recursion 3 of 5 · Midterm Q4b</div>
+<h1>Above the call vs below the call</h1>
+
+<div class="paper-task">
+  <strong class="title">Retrieval check &bull; 20 seconds</strong>
+  <p>From <a href="0024b-tracing-recursion-output.html">Lesson 24b</a>: in <code>p(3)</code>, why is the very last number printed a <code>3</code>?</p>
+</div>
+<details class="reveal">
+  <summary>reveal</summary>
+  <p>Because <code>p(3)</code> kept its own <code>n = 3</code> the whole time it was frozen. When it finally unfreezes and runs line B, it prints <em>its</em> <code>n</code>.</p>
+</details>
+
+<h2>The one idea that decides the output</h2>
+
+<p>Look at where the <code>cout</code> sits relative to the self-call:</p>
+
+<ul>
+  <li>A line <strong>above</strong> the self-call runs on the way <strong>down</strong> &mdash; big <code>n</code> first.</li>
+  <li>A line <strong>below</strong> the self-call runs on the way back <strong>up</strong> &mdash; and because copies resume in reverse, that comes out <strong>reversed</strong>.</li>
+</ul>
+
+<p>Same three-line skeleton, <code>cout</code> moved. This is the whole difference:</p>
+
+<div class="twocol">
+  <div>
+    <h4>print, then recurse</h4>
+<pre><code>void r(int n) {
+    if (n == 0) return;
+    cout &lt;&lt; n &lt;&lt; " ";
+    r(n - 1);
+}</code></pre>
+    <p><code>r(4)</code> &rarr; <code>4 3 2 1</code><br>Print is <em>above</em> &mdash; all of it on the way down.</p>
+  </div>
+  <div>
+    <h4>recurse, then print</h4>
+<pre><code>void s(int n) {
+    if (n == 0) return;
+    s(n - 1);
+    cout &lt;&lt; n &lt;&lt; " ";
+}</code></pre>
+    <p><code>s(4)</code> &rarr; <code>1 2 3 4</code><br>Print is <em>below</em> &mdash; all of it on the way back up, reversed.</p>
+  </div>
+</div>
+
+<p>The <code>p</code> from Lessons 24 &amp; 24b has a print <strong>both</strong> above <em>and</em> below the call, so every <code>n</code> is printed twice &mdash; once going down, once coming up. That is why <code>p(3)</code> &rarr; <code>3 2 1 1 2 3</code> reads the same forwards and backwards.</p>
+
+<div class="note"><strong>&ldquo;Line A&rdquo; and &ldquo;line B&rdquo; are names for <em>this</em> function only.</strong> Most recursive functions don&rsquo;t have both. Many have work only before the call (like <code>r</code> below), or only after (like <code>s</code>), or the work isn&rsquo;t a <code>cout</code> at all &mdash; it is <code>return n + f(n - 1)</code>, where the <code>+</code> happens on the way back up. There is no standard exam term for the two positions; &ldquo;before the call&rdquo; / &ldquo;after the call&rdquo; is all you need.</div>
+
+<h2>Watch each one execute &mdash; where does the work happen?</h2>
+
+<p>Step through both. Same idea as <a href="0024b-tracing-recursion-output.html">Lesson 24b</a>: a copy appears when its call runs, and vanishes when it returns.</p>
+
+<h3><code>r</code> &mdash; the <code>cout</code> is <em>before</em> the call</h3>
+<div data-recwalk="r"></div>
+
+<h3><code>s</code> &mdash; the <code>cout</code> is <em>after</em> the call</h3>
+<div data-recwalk="s"></div>
+
+<div class="note"><strong>&ldquo;But <code>r</code> is just a loop.&rdquo;</strong> You&rsquo;re right. <code>r</code>, with all its work <em>before</em> the call, prints <code>2 1</code> &mdash; exactly what <code>for (int i = 2; i &gt;= 1; i--) cout &lt;&lt; i;</code> prints. No visible difference, and a compiler can turn that kind of recursion straight into a loop. The difference shows the moment there is work <em>after</em> the call: <code>s</code> prints <code>1 2</code> &mdash; <strong>reversed</strong> &mdash; and a <code>for</code> counting up can&rsquo;t do that without extra effort. <code>s</code> gets the reverse for free because every paused copy is holding its place to run its after-work later. That stack of paused copies is the thing a loop does not have. So: <strong>work only before the call &rarr; behaves like a loop; any work after the call &rarr; needs the stack.</strong></div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; The Base Case Prints Nothing, But The Trip Back Does</strong>
+  <p>Two ways to drop these marks: (1) stopping your trace at the base case &mdash; the lines <em>below</em> the self-call still have to run for every frozen copy on the way back up; (2) miscounting the prints. Count first: print only <em>above</em> the call, went down <code>n</code> levels &rarr; expect <code>n</code> numbers. Print above <em>and</em> below &rarr; expect <code>2n</code>.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>p(3)</code> &rarr; <code>3 2 1 1 2 3</code> (six: line A &times;3, line B &times;3)</td>
+      <td><code>p(3)</code> &rarr; <code>3 2 1</code> (stopped at the base case)</td>
+    </tr></tbody>
+  </table>
+</div>
+
+<h2>Drills &mdash; closed book, on paper</h2>
+
+<div class="paper-task">
+  <strong class="title">Drill 1 &bull; trace</strong>
+  <p>Write the exact output of <code>q(4);</code></p>
+<pre><code>void q(int n) {
+    if (n == 0) return;
+    q(n - 1);
+    cout &lt;&lt; n &lt;&lt; " ";
+}</code></pre>
+</div>
+<details class="reveal">
+  <summary>reveal</summary>
+  <p><code>1 2 3 4</code>. The self-call is <em>above</em> the print, so nothing prints on the way down; each copy prints once on the way back up, smallest first. Four levels, one print each = four numbers.</p>
+</details>
+
+<div class="paper-task">
+  <strong class="title">Drill 2 &bull; trace, print above AND below</strong>
+  <p>Write the exact output of <code>g(3);</code> &mdash; neither <code>cout</code> prints a space, so watch the spacing.</p>
+<pre><code>void g(int n) {
+    if (n == 0) return;
+    cout &lt;&lt; "(" &lt;&lt; n;
+    g(n - 1);
+    cout &lt;&lt; n &lt;&lt; ")";
+}</code></pre>
+</div>
+<details class="reveal">
+  <summary>reveal</summary>
+  <p><code>(3(2(11)2)3)</code>. Going down prints <code>(3</code>, <code>(2</code>, <code>(1</code>; the base case prints nothing; coming back up prints <code>1)</code>, <code>2)</code>, <code>3)</code>. The two <code>1</code>s touch &mdash; <code>(1</code> then <code>1)</code> is <code>(11)</code> &mdash; because no statement emits a space.</p>
+</details>
+
+<p class="ask-agent">Bring both drill answers. If a trace is wrong, tell me which frame &mdash; that tells me whether it&rsquo;s the down/up split or the base case, and I&rsquo;ll fix this lesson.</p>
+
+<div class="nav">
+  <a href="0024b-tracing-recursion-output.html">&larr; Lesson 24b &mdash; tracing the output</a>
+  <a href="0024d-recursion-vs-loops.html">Lesson 24d &mdash; recursion vs loops &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/recwalk.js"></script>
+<script>
+(function () {
+  var V = function (n) { return '<span class="v">' + n + '</span>'; };
+
+  // r(v): print BEFORE the call. lines: if / cout / r(v-1). child nests after line 2.
+  function rf(v, s, c, paused) {
+    return {
+      title: 'copy r(' + v + ')  &middot;  n = ' + v, paused: !!paused, callAfter: 2,
+      lines: [
+        { t: 'if (' + V(v) + ' == 0) return;', s: s[0] || '', c: c[0] || '' },
+        { t: 'cout &lt;&lt; ' + V(v) + ' &lt;&lt; " ";', s: s[1] || '', c: c[1] || '' },
+        { t: 'r(' + V(v - 1) + ');', s: s[2] || '', c: c[2] || '' }
+      ]
+    };
+  }
+  var pausedR = function (v) { return rf(v, ['dim', 'dim', 'frozen'], ['', '', '&#9208; paused until r(' + (v - 1) + ') returns'], true); };
+
+  var R_STEPS = [
+    { cap: 'The program is about to call <code>r(2)</code>.', frames: [] },
+    { cap: 'Copy <code>r(2)</code> is created, <code>n = 2</code>. Check the base case.',
+      frames: [ rf(2, ['now', '', ''], ['is 2 == 0? no &mdash; skip', '', '']) ] },
+    { cap: 'The line <em>before</em> the call runs: print 2.',
+      frames: [ rf(2, ['dim', 'now', ''], ['(2 is not 0)', 'prints 2   &rarr; output: 2', '']) ] },
+    { cap: 'The call <code>r(1)</code> runs. <code>r(2)</code> pauses on this line.',
+      frames: [ rf(2, ['dim', 'dim', 'now'], ['', 'already printed 2', 'make a new copy r(1); pause here']) ] },
+    { cap: 'Copy <code>r(1)</code> appears inside <code>r(2)</code>, <code>n = 1</code>.',
+      frames: [ pausedR(2), rf(1, ['now', '', ''], ['is 1 == 0? no', '', '']) ] },
+    { cap: 'Print 1 (before the call).',
+      frames: [ pausedR(2), rf(1, ['dim', 'now', ''], ['(1 is not 0)', 'prints 1   &rarr; output: 2 1', '']) ] },
+    { cap: '<code>r(1)</code> calls <code>r(0)</code> and pauses. Copy <code>r(0)</code> appears &mdash; the base case: <code>0 == 0</code> is true, return now.',
+      frames: [ pausedR(2), pausedR(1),
+        rf(0, ['now', 'dim', 'dim'], ['0 == 0 &rarr; TRUE &mdash; return now', 'never runs', 'never runs']) ] },
+    { cap: '<code>r(0)</code> returned. <code>r(1)</code> un-pauses &mdash; but its call was the <strong>last line</strong>. Nothing after it. So <code>r(1)</code> just returns too. <strong>Nothing prints on the way back.</strong>',
+      frames: [ pausedR(2),
+        rf(1, ['dim', 'dim', 'dim'], ['', '', 'r(0) returned &mdash; and this was the last line, so r(1) returns now']) ] },
+    { cap: '<code>r(1)</code> returned. <code>r(2)</code> un-pauses &mdash; its call was also the last line. <code>r(2)</code> returns.',
+      frames: [ rf(2, ['dim', 'dim', 'dim'], ['', '', 'r(1) returned &mdash; last line, so r(2) returns now']) ] },
+    { cap: 'Done. Output: <span class="out">2 1</span>. Every print happened on the way <strong>down</strong>. The way back up did nothing &mdash; exactly like a loop counting down.', frames: [] }
+  ];
+
+  // s(v): print AFTER the call. lines: if / s(v-1) / cout. child nests after line 1.
+  function sf(v, s, c, paused) {
+    return {
+      title: 'copy s(' + v + ')  &middot;  n = ' + v, paused: !!paused, callAfter: 1,
+      lines: [
+        { t: 'if (' + V(v) + ' == 0) return;', s: s[0] || '', c: c[0] || '' },
+        { t: 's(' + V(v - 1) + ');', s: s[1] || '', c: c[1] || '' },
+        { t: 'cout &lt;&lt; ' + V(v) + ' &lt;&lt; " ";', s: s[2] || '', c: c[2] || '' }
+      ]
+    };
+  }
+  var pausedS = function (v) { return sf(v, ['dim', 'frozen', ''], ['', '&#9208; paused until s(' + (v - 1) + ') returns', ''], true); };
+
+  var S_STEPS = [
+    { cap: 'The program is about to call <code>s(2)</code>.', frames: [] },
+    { cap: 'Copy <code>s(2)</code>, <code>n = 2</code>. Check the base case.',
+      frames: [ sf(2, ['now', '', ''], ['is 2 == 0? no', '', '']) ] },
+    { cap: 'The very next line is the call <code>s(1)</code>. It runs straight away and <code>s(2)</code> pauses. <strong>Nothing has printed yet.</strong>',
+      frames: [ sf(2, ['dim', 'now', ''], ['(2 is not 0)', 'make a new copy s(1); pause here', '']) ] },
+    { cap: 'Copy <code>s(1)</code> appears inside <code>s(2)</code>, <code>n = 1</code>.',
+      frames: [ pausedS(2), sf(1, ['now', '', ''], ['is 1 == 0? no', '', '']) ] },
+    { cap: '<code>s(1)</code> also calls immediately and pauses. Still nothing printed.',
+      frames: [ pausedS(2), sf(1, ['dim', 'now', ''], ['(1 is not 0)', 'make a new copy s(0); pause here', '']) ] },
+    { cap: 'Copy <code>s(0)</code> &mdash; the base case. <code>0 == 0</code> is true, it returns at once.',
+      frames: [ pausedS(2), pausedS(1),
+        sf(0, ['now', 'dim', 'dim'], ['0 == 0 &rarr; TRUE &mdash; return now', 'never runs', 'never runs']) ] },
+    { cap: '<code>s(0)</code> returns. <code>s(1)</code> un-pauses on the line <em>after</em> its call and prints <strong>1</strong> &mdash; the first output, and we are already on the way back up.',
+      frames: [ pausedS(2),
+        sf(1, ['dim', 'dim', 'now'], ['', 's(0) returned', 'resume HERE &rarr; prints 1   &rarr; output: 1']) ] },
+    { cap: '<code>s(1)</code> returns. <code>s(2)</code> un-pauses and prints <strong>2</strong>.',
+      frames: [ sf(2, ['dim', 'dim', 'now'], ['', 's(1) returned', 'resume HERE &rarr; prints 2   &rarr; output: 1 2']) ] },
+    { cap: 'Done. Output: <span class="out">1 2</span>. Nothing happened on the way <strong>down</strong>; every print was on the way back <strong>up</strong> &mdash; so the numbers come out reversed. A plain <code>for</code> counting up cannot do this without extra work.', frames: [] }
+  ];
+
+  mountRecwalk(document.querySelector('[data-recwalk="r"]'), R_STEPS);
+  mountRecwalk(document.querySelector('[data-recwalk="s"]'), S_STEPS);
+})();
+</script>
+</body>
+</html>

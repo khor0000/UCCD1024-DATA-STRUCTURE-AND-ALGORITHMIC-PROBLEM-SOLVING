@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4 — What is a Node?</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 4 of the linked-list crash sequence · Node</div>
+<h1>What is a Node?</h1>
+
+<p>A <strong>Node</strong> is a small box that holds exactly two things: one piece of data, and the address of the next box in the chain. That's the whole definition — everything below is just unpacking what that means.</p>
+
+<div class="metaphor">
+<p><span class="term">A treasure hunt.</span> At stop 1 you find a box: inside is a clue and a note reading "next, go to stop 2." At stop 2: another clue, another note pointing to stop 3. Nobody wrote down the whole map in one place — each box only needs to know the very next stop.</p>
+</div>
+
+<p>This course's exact <code>Node</code> (from Lecture 4):</p>
+
+<pre><code>struct Node {
+    int   item;   // the data — the clue in the box
+    Node *next;   // the address of the next box (or NULL, if this is the last one)
+};</code></pre>
+
+<p><code>item</code> is the data. <code>next</code> is a pointer — an address — that points at the next Node in the chain. Read <code>Node *next</code> out loud as: <em>"next is a pointer to a Node."</em></p>
+
+<div class="diagram">
+  <div class="node highlight">
+    <div class="cell"><span class="item">10</span><span class="next">•</span></div>
+    <div class="addr" style="margin-top:.3rem">node1</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="cell"><span class="item">20</span><span class="next">•</span></div>
+    <div class="addr" style="margin-top:.3rem">node2</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="cell"><span class="item">30</span><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">node3</div>
+  </div>
+</div>
+
+<p>Each box's <code>item</code> is the data (10, 20, 30). Each box's <code>next</code> is a dot standing in for "the address of the next box" — except the last one, whose <code>next</code> is <code>NULL</code>: a special "there is nothing after this" address. <code>NULL</code> is how a Node says "I'm the last stop." Nothing stops you chaining the same shape as many times as you want, box after box, which is exactly how a list of any length gets built from one repeated shape.</p>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — in <code>struct Node { int item; Node *next; };</code>, what does the <code>next</code> field actually store?</p>
+  <button class="opt">A copy of the next Node's item</button>
+  <button class="opt" data-correct>The address of the next Node (or NULL)</button>
+  <button class="opt">The number of Nodes remaining</button>
+  <div class="feedback good" data-feedback-good>Right — next is a pointer, so it holds an address, never a copy of the whole next box.</div>
+  <div class="feedback bad" data-feedback-bad>next's declared type is <code>Node *</code> — a pointer holds an address, not a copy of the data at that address.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="null|NULL">
+  <p class="prompt">Second check — what value does the <strong>last</strong> Node in a chain store in its <code>next</code> field?</p>
+  <input type="text" placeholder="type the value">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — NULL is the "nothing after this" address.</div>
+  <div class="feedback bad" data-feedback-bad>Look at node3 in the diagram above — what's written in its next cell instead of a dot?</div>
+</div>
+
+<h2>One thing worth double-checking</h2>
+
+<p>You might reasonably wonder: how can <code>Node</code> contain a pointer to another <code>Node</code>, when <code>Node</code> isn't even finished being defined yet? It can't contain another Node <em>directly</em> — that really would be a problem. The reason it works is that <code>next</code> only ever stores an <strong>address</strong>, not a whole Node, and an address is always the same small, fixed size no matter what it points to — same idea as Lesson 1's pointer, just pointing at a whole struct instead of a single <code>int</code>.</p>
+
+<pre><code>struct Node {
+    int   item;
+    Node  next;    // <mark class="fault">won't compile — this needs to physically fit a whole Node inside a Node, forever</mark>
+};
+
+struct Node {
+    int   item;
+    Node *next;    // fine — this is just an address, always the same small size
+};</code></pre>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — why does <code>Node *next;</code> compile fine, but <code>Node next;</code> (no star) would not?</p>
+  <button class="opt">Node next; has a typo — it's just a syntax error, unrelated to self-reference</button>
+  <button class="opt" data-correct>Node next; would need to physically fit a whole Node inside a Node, forever — infinite size. Node *next; only stores an address, which is always a small, fixed size</button>
+  <button class="opt">Both compile fine — there's no real difference</button>
+  <div class="feedback good" data-feedback-good>Right. The star is what turns "contains the actual thing" (impossible, infinite) into "contains the address of the thing" (trivial, fixed size).</div>
+  <div class="feedback bad" data-feedback-bad>Without the star, Node next; is asking to store a whole Node inside a Node — and that inner Node would need to store another whole Node inside itself, forever.</div>
+</div>
+
+<p class="ask-agent">You've only seen Node's shape so far, not how one actually gets created while a program is running — that's next.</p>
+
+<div class="nav">
+  <a href="0003-pointers-to-structs.html">&larr; pointers to structs</a>
+  <a href="0005-the-new-keyword.html">next: the new keyword &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

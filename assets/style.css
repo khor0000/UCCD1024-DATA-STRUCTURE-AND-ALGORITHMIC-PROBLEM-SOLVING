@@ -1,0 +1,773 @@
+/*
+  Night Bench — the design system for these lessons.
+
+  Scene: cramming at a desk under one lamp the night before a lab test,
+  marking up broken C++ against a dark terminal. Dark is the primary
+  mode (that's the actual moment this gets used in); light is a
+  competent daytime read, not an afterthought.
+
+  Two accents carry real meaning, nothing decorative:
+    --red   = the grader's pen. Wrong answers, bugs, faults in code.
+    --cyan  = correct / confirmed. Right answers, resolved state.
+  Everything else stays ink-on-paper monochrome.
+*/
+
+:root {
+  --bg:        oklch(0.985 0.004 90);
+  --bg-well:   oklch(0.965 0.006 90);
+  --ink:       oklch(0.24  0.012 60);
+  --ink-soft:  oklch(0.46  0.012 60);
+  --border:    oklch(0.84  0.008 90);
+  --red:       oklch(0.52  0.19  32);
+  --red-well:  oklch(0.94  0.03  32);
+  --red-ink:   oklch(0.40  0.17  32);
+  --cyan:      oklch(0.50  0.09  215);
+  --cyan-well: oklch(0.93  0.025 215);
+  --cyan-ink:  oklch(0.38  0.09  215);
+
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "URW Palladio L", Georgia, serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", monospace;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        oklch(0.19  0.010 55);
+    --bg-well:   oklch(0.15  0.010 55);
+    --ink:       oklch(0.90  0.015 80);
+    --ink-soft:  oklch(0.68  0.015 80);
+    --border:    oklch(0.32  0.014 60);
+    --red:       oklch(0.68  0.17  32);
+    --red-well:  oklch(0.28  0.06  25);
+    --red-ink:   oklch(0.82  0.14  35);
+    --cyan:      oklch(0.75  0.10  205);
+    --cyan-well: oklch(0.26  0.045 210);
+    --cyan-ink:  oklch(0.85  0.09  205);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { color-scheme: light dark; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem 6rem;
+}
+
+::selection { background: var(--red); color: var(--bg); }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+h1 {
+  font-size: 1.9rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0.4rem 0 1.6rem;
+  text-wrap: balance;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 2.4rem 0 0.9rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+p { margin: 0.95rem 0; text-wrap: pretty; }
+strong { font-weight: 700; }
+em { color: var(--ink-soft); }
+
+a { color: var(--red-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--bg-well);
+  border: 1px solid var(--border);
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+}
+
+pre {
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  background: var(--bg-well);
+  border: 1px solid var(--border);
+  padding: 1rem 1.15rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+pre code { background: none; border: none; padding: 0; }
+
+/* faults highlighted inside a code block: the grader's red pen */
+mark.fault {
+  background: var(--red-well);
+  color: var(--red-ink);
+  border-bottom: 2px solid var(--red);
+  padding: 0 0.15rem;
+  border-radius: 2px;
+}
+
+/* ---- Metaphor: the plain-language anchor before the technical term ---- */
+.metaphor {
+  margin: 1.5rem 0;
+  padding: 1.1rem 1.3rem;
+  background: var(--bg-well);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.metaphor p:first-child { margin-top: 0; }
+.metaphor p:last-child { margin-bottom: 0; }
+.metaphor .term { font-style: italic; color: var(--ink-soft); }
+
+/* ---- Field note: a short aside, called out by rule not by box ---- */
+.note {
+  margin: 1.4rem 0;
+  padding-left: 1rem;
+  border-left: 2px solid var(--border);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.3rem 0;
+  font-size: 0.95rem;
+}
+th, td { padding: 0.55rem 0.8rem; text-align: left; border-bottom: 1px solid var(--border); }
+th { font-weight: 700; border-bottom: 2px solid var(--ink); }
+tbody tr:last-child td { border-bottom: 1px solid var(--border); }
+
+/* ---- Pointer / node diagram ---- */
+.diagram {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  margin: 1.8rem 0 1.6rem;
+  padding: 1.4rem 0.5rem 0.5rem;
+}
+.node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+.node .addr {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+.node .cell {
+  display: flex;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.node .cell > span {
+  padding: 0.5rem 0.75rem;
+  min-width: 2.2rem;
+  text-align: center;
+}
+.node .cell > span + span { border-left: 1px solid var(--ink); }
+.node .cell .item { color: var(--ink); }
+.node .cell .next { color: var(--ink-soft); }
+.node.highlight .cell { border-color: var(--red); }
+.node.highlight .item { color: var(--red-ink); font-weight: 700; }
+.node .cell .next.null { color: var(--ink-soft); font-style: italic; font-size: 0.75em; }
+.node .cell .next.highlight { color: var(--cyan-ink); font-weight: 700; }
+
+.diagram .arrow {
+  display: flex;
+  align-items: center;
+  align-self: start;
+  margin-top: 1.05rem;
+  color: var(--ink-soft);
+  flex: 0 0 auto;
+}
+.diagram .arrow svg { width: 2rem; height: 0.9rem; }
+.diagram .arrow.broken { color: var(--red); }
+
+/* ---- Quiz widget ---- */
+.quiz {
+  margin-top: 2.6rem;
+  padding-top: 1.6rem;
+  border-top: 2px solid var(--ink);
+}
+.quiz .prompt { font-weight: 600; margin-bottom: 1rem; }
+.quiz .opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.98rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.55rem;
+  cursor: pointer;
+}
+.quiz .opt:hover { border-color: var(--ink-soft); }
+.quiz .opt:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
+.quiz .opt.correct { border-color: var(--cyan); background: var(--cyan-well); color: var(--cyan-ink); font-weight: 600; }
+.quiz .opt.wrong { border-color: var(--red); background: var(--red-well); color: var(--red-ink); }
+.quiz .opt:disabled { cursor: default; }
+.quiz .opt:disabled:not(.correct):not(.wrong) { opacity: 0.55; }
+
+.quiz .short input[type=text] {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.quiz .short input[type=text]:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
+.quiz .short button {
+  margin-top: 0.7rem;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.92rem;
+  padding: 0.5rem 1.1rem;
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.quiz .short button:hover { background: var(--ink-soft); }
+
+.quiz .feedback {
+  display: none;
+  margin-top: 0.9rem;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+.quiz .feedback.show { display: block; }
+.quiz .feedback.good { background: var(--cyan-well); color: var(--cyan-ink); }
+.quiz .feedback.bad { background: var(--red-well); color: var(--red-ink); }
+
+.nav {
+  margin-top: 3.5rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+.nav a { color: var(--ink-soft); }
+.nav a:hover { color: var(--red-ink); }
+
+.ask-agent {
+  margin-top: 1.6rem;
+  font-size: 0.88rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .quiz .feedback.show { animation: settle 180ms ease-out; }
+}
+@keyframes settle {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Quoting the learner back to themselves — used when a lesson repeats
+   their own wording as the correct answer. A hairline rule and an indent,
+   the way a printed book sets a quotation. Not a card, not an accent stripe. */
+blockquote {
+  margin: 1.5rem 0 1.5rem 1.25rem;
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--border);
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* ---- Exam Trap Callout: refined, quiet warning for handwritten exam mistakes ---- */
+.exam-trap, .trap-box {
+  margin: 1.8rem 0;
+  padding: 1.15rem 1.35rem;
+  background: var(--bg-well);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--red);
+  border-radius: 8px;
+}
+.exam-trap strong.title, .trap-box strong.title,
+.exam-trap .trap-title, .trap-box .trap-title {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--red-ink);
+  margin-bottom: 0.55rem;
+}
+.exam-trap p, .trap-box p {
+  margin: 0.5rem 0;
+}
+.exam-trap p:first-child, .trap-box p:first-child {
+  margin-top: 0;
+}
+.exam-trap p:last-child, .trap-box p:last-child {
+  margin-bottom: 0;
+}
+.exam-trap table, .trap-box table {
+  margin: 0.8rem 0 0.2rem;
+  font-size: 0.9rem;
+}
+.exam-trap th {
+  border-bottom: 1.5px solid var(--border);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  padding: 0.45rem 0.6rem;
+}
+.exam-trap td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 0.6rem;
+}
+.exam-trap tr:last-child td {
+  border-bottom: none;
+}
+
+/* Ported verbatim from UCCD2323's stylesheet, 2026-08-26, at the learner's
+   request: one exam-trap component with the same look in every course, so the
+   signal "this is where the mark is lost" is recognised instantly and never
+   has to be re-learned. See LEARNER.md section 11. */
+
+/* ------------------------------------------------------------------
+   PAPER TASK + REVEAL — added 2026-08-27.
+
+   The blank-paper rule (LEARNER.md 4b) needs a component, or every
+   lesson re-invents one. .paper-task states what to draw/write on
+   paper; .reveal hides the model answer until it has been attempted.
+   A worked answer printed inline is not practice — the learner cannot
+   draw what is already on the page.
+   ------------------------------------------------------------------ */
+
+.paper-task {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cyan);
+  background: var(--bg-well);
+  padding: 0.9rem 1.1rem;
+  margin: 1.4rem 0;
+  border-radius: 2px;
+}
+.paper-task strong.title {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--cyan-ink);
+  margin-bottom: 0.45rem;
+}
+@media (prefers-color-scheme: dark) {
+  .paper-task strong.title { color: var(--cyan); }
+}
+.paper-task p:last-child { margin-bottom: 0; }
+
+.reveal {
+  border-top: 1px solid var(--border);
+  margin: 1.1rem 0 1.6rem;
+  padding-top: 0.6rem;
+}
+.reveal > summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+  list-style: none;
+  padding: 0.2rem 0;
+}
+.reveal > summary::-webkit-details-marker { display: none; }
+.reveal > summary::before {
+  content: "▸ ";
+  color: var(--cyan);
+}
+.reveal[open] > summary::before { content: "▾ "; }
+.reveal > summary:hover { color: var(--ink); }
+.reveal[open] > summary { margin-bottom: 0.5rem; }
+
+/* ------------------------------------------------------------------
+   STEPPER — added 2026-08-27, at the learner's request.
+
+   "I can solve it, but I'd prefer to see what tmp and head hold line
+   by line, so I don't have to imagine it — that consumes a lot of
+   mental compute."
+
+   That is working memory being spent on bookkeeping instead of on the
+   idea. The stepper does the bookkeeping: one click per statement,
+   the executed line highlighted, every variable's current contents
+   shown in a table, and the chain redrawn with pointers sitting above
+   the node they point at. Changed cells are marked.
+
+   Authoring contract lives at the top of stepper.js.
+   ------------------------------------------------------------------ */
+
+.stepper {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-well);
+  margin: 2rem 0;
+  overflow: hidden;
+}
+.stepper > script { display: none; }
+
+.stepper-code {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.75;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.stepper-code .ln {
+  display: block;
+  padding: 0 1.1rem;
+  white-space: pre;
+  color: var(--ink-soft);
+  border-left: 3px solid transparent;
+}
+.stepper-code .ln.done { color: var(--ink); }
+.stepper-code .ln.now {
+  color: var(--ink);
+  font-weight: 700;
+  border-left-color: var(--ink);
+  background: color-mix(in oklch, var(--ink) 9%, transparent);
+}
+
+.stepper-caption {
+  padding: 0.85rem 1.1rem;
+  font-size: 0.92rem;
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
+  min-height: 1.2rem;
+}
+.stepper-caption em { color: var(--ink-soft); }
+
+/* --- the memory table: what each box holds right now --- */
+.stepper-mem { padding: 0.9rem 1.1rem 0.2rem; }
+.stepper-mem table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+.stepper-mem th {
+  text-align: left;
+  font-family: var(--serif);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  font-weight: 400;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.stepper-mem td {
+  padding: 0.34rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-soft);
+}
+.stepper-mem td.name { color: var(--ink); }
+.stepper-mem tr:last-child td { border-bottom: none; }
+.stepper-mem tr.changed td { color: var(--ink); }
+.stepper-mem tr.changed td.name {
+  box-shadow: inset 2px 0 0 0 var(--ink-soft);
+  padding-left: 0.75rem;
+}
+.stepper-mem tr.lost td { color: var(--red-ink); }
+@media (prefers-color-scheme: dark) {
+  .stepper-mem tr.lost td { color: var(--red); }
+}
+.stepper-mem td .tag {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+/* --- the chain, with pointers parked above their target --- */
+.stepper-viz {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  padding: 1.1rem 1.1rem 1.2rem;
+  overflow-x: auto;
+}
+.stepper-col { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
+.stepper-ptrs { display: flex; gap: 0.4rem; min-height: 0; margin-bottom: 0.1rem; }
+.stepper-down {
+  height: 0.9rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 0.9rem;
+}
+.stepper-down.hidden { visibility: hidden; }
+.stepper-col .arrow-gap { display: flex; align-items: center; }
+.stepper-viz .arrow {
+  display: flex;
+  align-items: center;
+  color: var(--ink-soft);
+  flex: 0 0 auto;
+  padding-bottom: 1.4rem;
+}
+.stepper-viz .arrow svg { width: 2rem; height: 0.9rem; }
+.stepper-viz .arrow.self { color: var(--red); }
+.stepper-orphan {
+  opacity: 0.55;
+  border-left: 1px dashed var(--red);
+  padding-left: 0.7rem;
+  margin-left: 0.7rem;
+}
+
+/* --- controls --- */
+.stepper-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.1rem;
+  border-top: 1px solid var(--border);
+}
+.stepper-bar button {
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  padding: 0.32rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+.stepper-bar button:hover:not(:disabled) { border-color: var(--ink-soft); }
+.stepper-bar button:disabled { opacity: 0.35; cursor: default; }
+.stepper-bar .step-count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+/* ------------------------------------------------------------------
+   STEPPER MOTION — added 2026-08-27.
+
+   "If it is static, every time I click next, I need to scan the whole
+   block again."
+
+   So the picture is never rebuilt. Boxes persist and are keyed; a
+   pointer box SLIDES to its new target (FLIP, in stepper.js), and only
+   the cell that changed flashes. Everything else holds still, which is
+   what makes the change findable without re-reading.
+   ------------------------------------------------------------------ */
+
+.stepper-col, .stepper .node { will-change: transform; }
+.stepper-col.moving, .stepper .node.moving { z-index: 3; position: relative; }
+
+/* the one cell that changed */
+@keyframes stepper-flash {
+  0%   { background: color-mix(in oklch, var(--cyan) 26%, transparent);
+         box-shadow: inset 0 -2px 0 0 var(--cyan); }
+  40%  { background: color-mix(in oklch, var(--cyan) 26%, transparent);
+         box-shadow: inset 0 -2px 0 0 var(--cyan); }
+  100% { background: transparent; box-shadow: inset 0 0 0 0 transparent; }
+}
+.stepper .flash {
+  animation: stepper-flash 1020ms ease-out;
+  border-radius: 2px;
+}
+.stepper-code .ln.flash { animation: none; }
+
+/* boxes arriving and leaving */
+.stepper .node.entering,
+.stepper-col > .node.entering {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+.stepper .node {
+  transition: opacity 360ms ease, transform 360ms ease, border-color 360ms ease;
+}
+.stepper-col.leaving { opacity: 0; transform: scale(0.94); transition: opacity 360ms ease, transform 360ms ease; }
+
+/* a pointer box: one cell, its name under it */
+.stepper .ptr-box .cell { border-style: dashed; }
+.stepper .node .addr.name { font-weight: 700; color: var(--ink); }
+.stepper .node .addr.tag { min-height: 0.9rem; }
+
+/* a node nothing can reach any more */
+.stepper .node.unreachable { opacity: 0.45; }
+.stepper .node.unreachable .cell { border-color: var(--red); border-style: dashed; }
+.stepper .node.unreachable .addr.tag { color: var(--red); font-style: italic; }
+
+.stepper-viz .arrow.faint { opacity: 0.22; }
+.stepper-viz .arrow.self { font-size: 1.15rem; line-height: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stepper .flash { animation: none; outline: 2px solid var(--cyan); }
+  .stepper .node, .stepper-col { transition: none !important; }
+}
+
+/* ------------------------------------------------------------------
+   STEPPER — CONSTANT GEOMETRY, added 2026-08-27.
+
+   "Could you make the size of the box constant? Currently the size
+   changes and I need to move my mouse every time after 'run next
+   line' to locate the button."
+
+   A control that moves must be re-found on every click — the same tax
+   the static redraw charged, just paid with the hand instead of the
+   eye. Three things are pinned so nothing below them ever shifts:
+     1. panel heights, reserved to the tallest stage (stepper.js);
+     2. the pointer shelf above every node, always one box tall, so a
+        column keeps its height whether or not a pointer sits on it;
+     3. cell widths, so a node is the same size holding NULL as it is
+        holding 0x520.
+   ------------------------------------------------------------------ */
+
+.stepper-ptrs { height: 5.1rem; align-items: flex-end; }
+.stepper-viz { align-content: flex-start; }
+
+.stepper .node .cell > span {
+  min-width: 3.5rem;
+  text-align: center;
+}
+.stepper .node .addr { height: 1rem; line-height: 1rem; }
+
+/* The buttons keep one size regardless of the label inside them. */
+.stepper-bar button { min-width: 5.5rem; }
+.stepper-bar .step-count { min-width: 5.5rem; text-align: right; }
+
+/* ------------------------------------------------------------------
+   THE COPY FLIGHT — added 2026-08-27.
+
+   "If tmp copies head's value, could you make the head duplicate its
+   value and fly into the tmp box?"
+
+   Exactly right, and it is the one moment in this component that
+   deserves authorship. An assignment copies a value out of one box
+   into another; flashing only the destination showed the effect and
+   hid the cause. The cause is the whole lesson.
+
+   The ghost is the value in flight. It is drawn in cyan — the
+   confirmed/correct accent of this world, never the grader's red —
+   because a copy is a correct machine operation even when the line
+   that ordered it is a bug.
+   ------------------------------------------------------------------ */
+
+.stepper-ghost {
+  position: fixed;
+  z-index: 60;
+  margin: 0;
+  display: block;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--cyan);
+  border-radius: 2px;
+  box-shadow: 0 6px 18px -6px color-mix(in oklch, var(--cyan) 70%, transparent),
+              0 1px 2px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* The source keeps its value and says so — a copy is not a move. */
+@keyframes stepper-copy-src {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklch, var(--cyan) 60%, transparent); }
+  30%  { box-shadow: 0 0 0 4px color-mix(in oklch, var(--cyan) 30%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--cyan) 0%, transparent); }
+}
+.stepper .copy-src {
+  animation: stepper-copy-src 1020ms ease-out;
+  border-radius: 2px;
+}
+
+/* The destination waits with an open slot, so the eye knows where to look. */
+.stepper .copy-dst {
+  color: transparent !important;
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in oklch, var(--cyan) 12%, transparent) 0 3px,
+    transparent 3px 6px
+  );
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stepper-ghost { display: none; }
+  .stepper .copy-src, .stepper .copy-dst { animation: none; }
+}
+
+
+/* ------------------------------------------------------------------
+   TWO BEATS, AND ONE JOB FOR CYAN — added 2026-08-27.
+
+   A review of the first cut found six to nine simultaneous attention
+   bids for one fact, and cyan carrying six unrelated meanings at once:
+   current line, changed row, changed cell, source, in flight, correct.
+   A colour that means everything cannot be used to find anything, so
+   the eye scans the whole block — which is exactly the noise the
+   stepper existed to remove.
+
+   Cyan now means ONE thing: a value in flight, and the cell it just
+   landed in. The current line is a neutral weighted bar; a changed row
+   carries a hairline rule. Nothing else competes.
+
+   And the copy gets the stage to itself. During beat one everything
+   uninvolved dims out; the table is frozen; the destination still holds
+   its old value. The ghost then rests in the destination for 440ms with
+   nothing happening at all before the consequences are allowed to run.
+   ------------------------------------------------------------------ */
+
+.stepper-code, .stepper-mem, .stepper-viz .node, .stepper-viz .arrow {
+  transition: opacity 300ms ease;
+}
+.stepper.beat-copy .stepper-mem { opacity: 0.3; }
+.stepper.beat-copy .stepper-code { opacity: 0.5; }
+.stepper.beat-copy .stepper-viz .arrow { opacity: 0.15; }
+.stepper.beat-copy .stepper-viz .node:not(:has(.copy-src)):not(:has(.copy-dst)) {
+  opacity: 0.25;
+}
+
+/* The one exception to "cyan is the value": the ghost resting in its
+   destination is still the value, so the slot it sits in stays cyan. */
+.stepper.beat-copy .copy-dst { background-image: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stepper-code, .stepper-mem, .stepper-viz .node, .stepper-viz .arrow { transition: none; }
+  .stepper.beat-copy .stepper-mem,
+  .stepper.beat-copy .stepper-code,
+  .stepper.beat-copy .stepper-viz .arrow,
+  .stepper.beat-copy .stepper-viz .node { opacity: 1; }
+}

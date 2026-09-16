@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 24 — Why a self-calling function isn't infinite</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 24 · Recursion 1 of 5 · Midterm Q4b &amp; Q4c</div>
+<h1>Why a self-calling function isn&rsquo;t infinite</h1>
+
+<p><strong>A recursive function is a function that calls itself.</strong> The midterm never asks you to write one. It gives you one and asks either &ldquo;what is the output of <code>p(3)</code>?&rdquo; (Q4b, you trace it) or &ldquo;what does this function compute?&rdquo; (Q4c, you describe it). Both are <em>reading</em> jobs.</p>
+
+<div class="note"><strong>Where this sits.</strong> You can already predict the output of a <code>for</code> / <code>while</code> / <code>do-while</code> loop by hand (<a href="0018-the-trace-table.html">Lesson 18</a>, Q1a). Recursion output is that same skill with one extra twist, which Lesson 24c names. This 5-part chain gets you there one step at a time.</p>
+
+<h2>The function this chain traces</h2>
+
+<pre><code>void p(int n) {
+    if (n == 0) return;      // the STOP line
+    cout &lt;&lt; n &lt;&lt; " ";        // line A
+    p(n - 1);                // calls a fresh copy of p, with n one smaller
+    cout &lt;&lt; n &lt;&lt; " ";        // line B
+}</code></pre>
+
+<div class="note"><strong>&ldquo;Line A&rdquo; and &ldquo;line B&rdquo; are labels for <em>this</em> function only.</strong> Not every recursive function prints both before and after its call &mdash; some do only one, some do neither. <a href="0024c-above-and-below-the-call.html">Lesson 24c</a> shows what changes when the print is only on one side.</div>
+
+<h2>The objection &mdash; &ldquo;surely that never ends?&rdquo;</h2>
+
+<p>If <code>p</code> needs <code>p</code> to finish before <code>p</code> can finish, nothing ever finishes. That is the honest reaction, and it is worth answering before anything else.</p>
+
+<p>It is <strong>not the same <code>p</code></strong>. When <code>p(3)</code> reaches the line <code>p(n - 1)</code>, that starts a brand-new, separate copy of the function &mdash; its own <code>n</code>, its own place in the code. <code>p(3)</code> freezes on that line and waits. When the new copy has completely finished, <code>p(3)</code> unfreezes and runs its next line.</p>
+
+<p>Two things guarantee it stops, and every exam recursion has both:</p>
+
+<table>
+  <thead><tr><th>Thing</th><th>In the code</th><th>Its job</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>The stop line</strong><br>(real name: the <strong>base case</strong>)</td>
+      <td>an <code>if</code> that <code>return</code>s <em>without</em> calling <code>p</code> again &mdash; <code>if (n == 0) return;</code></td>
+      <td>the bottom. A copy that hits this stops and hands control back up. Nothing below it runs.</td>
+    </tr>
+    <tr>
+      <td><strong>The shrinking argument</strong></td>
+      <td>every self-call passes something smaller &mdash; <code>p(n - 1)</code></td>
+      <td>drives every copy one step closer to the base case, so it is always reached.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Remove either one and it really is endless &mdash; the program keeps making copies until it runs out of room and crashes (a <em>stack overflow</em>). Both present, and it always stops.</p>
+
+<h2>The picture: a stack of clerks</h2>
+
+<p>Clerk&nbsp;3 has a form. Halfway down, one step says: <em>&ldquo;hand a fresh blank copy to a new clerk, write <code>n</code> one smaller on it, and wait for them to hand it back before carrying on.&rdquo;</em></p>
+
+<p>Clerk&nbsp;3 hands to Clerk&nbsp;2 and <strong>freezes</strong>, holding <code>n = 3</code>. Clerk&nbsp;2 hands to Clerk&nbsp;1, freezes holding <code>n = 2</code>. Clerk&nbsp;1 hands to Clerk&nbsp;0. Clerk&nbsp;0&rsquo;s form says <em>&ldquo;if <code>n</code> is 0, stop &mdash; hand back nothing.&rdquo;</em> Clerk&nbsp;0 is the base case: the floor of the stack, the one who hands off to nobody.</p>
+
+<p>Then they unfreeze <strong>in reverse</strong>: Clerk&nbsp;1 finishes, then Clerk&nbsp;2, then Clerk&nbsp;3. <strong>Last to freeze, first to resume.</strong> Each still has their own <code>n</code> on their own form.</p>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">In this function, which line is the base case?<br>
+  <code>void h(int n) {</code><br>
+  &nbsp;&nbsp;<code>if (n &lt;= 1) return;</code> &nbsp;&mdash; line 1<br>
+  &nbsp;&nbsp;<code>cout &lt;&lt; n;</code> &nbsp;&mdash; line 2<br>
+  &nbsp;&nbsp;<code>h(n - 2);</code> &nbsp;&mdash; line 3<br>
+  <code>}</code></p>
+  <button class="opt" data-correct>Line 1 &mdash; it returns without calling <code>h</code></button>
+  <button class="opt">Line 3 &mdash; it calls <code>h</code> with a smaller number</button>
+  <button class="opt">Line 2 &mdash; it does the printing</button>
+  <div class="feedback good" data-feedback-good>Right. The base case is the branch that ends the function <em>without</em> another self-call. Line 3 is the shrinking argument; line 2 is just the work.</div>
+  <div class="feedback bad" data-feedback-bad>The base case is the one that stops the recursion &mdash; it returns without calling <code>h</code> again. Look for the <code>if</code> with a bare <code>return</code>.</div>
+</div>
+
+<p class="ask-agent">If &ldquo;a fresh copy with its own <code>n</code>&rdquo; still feels slippery, tell me &mdash; that one idea carries the whole chain, and I&rsquo;ll fix this lesson so it lands.</p>
+
+<div class="nav">
+  <a href="0023-bst-traversals.html">&larr; Lesson 23 &mdash; BST traversals</a>
+  <a href="0024b-tracing-recursion-output.html">Lesson 24b &mdash; tracing the output &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

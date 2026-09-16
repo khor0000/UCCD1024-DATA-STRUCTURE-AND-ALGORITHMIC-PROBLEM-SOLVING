@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6f — The constructor</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 6f of the linked-list crash sequence · Structs, part 4</div>
+<h1>The constructor</h1>
+
+<p>One member function in this course's code looks broken at first glance:</p>
+
+<pre><code>struct Node {
+    int   item;
+    Node *next;
+    Node(int);        // ← no return type. And named "Node"?
+    Node();           // ← same again
+};</code></pre>
+
+<p>Every other function so far started with a return type — <code>bool passed()</code>, <code>Node *find(int)</code>. These two have none, and they're named exactly the same as the struct. That's not a typo. A member function with the struct's own name and no return type is a <strong>constructor</strong>, and that's the one idea in this lesson.</p>
+
+<h2>What it does</h2>
+
+<p>A constructor runs <strong>automatically, once</strong>, at the moment a struct variable is created. You never call it by name. Its job is to fill in the fields so the variable starts out in a sane state instead of holding leftover garbage.</p>
+
+<div class="metaphor">
+<p><span class="term">The factory reset on a new phone.</span> You don't press a "set up the phone" button — the moment the phone is switched on for the first time, it puts itself into a known starting state. Nobody calls it; it just happens once, at creation. A constructor is that first boot.</p>
+</div>
+
+<h2>Node's two constructors</h2>
+
+<pre><code>Node::Node(int newItem) {   // used when you write: new Node(10)
+    item = newItem;
+    next = NULL;
+}
+
+Node::Node() {              // used when you write: new Node
+    item = 0;
+    next = NULL;
+}</code></pre>
+
+<p>Same <code>Struct::</code> pattern from last lesson — <code>Node::Node</code> means "the <code>Node</code> constructor belonging to struct <code>Node</code>." The only structural difference from an ordinary member function is the missing return type.</p>
+
+<p>So back in Lesson 5, when you wrote <code>Node *n1 = new Node(10);</code>, this is what actually happened: <code>new</code> reserved the memory, and <em>then</em> the <code>Node(int)</code> constructor ran on that fresh memory, setting <code>item = 10</code> and <code>next = NULL</code>. Two constructors exist so both of these work:</p>
+
+<table>
+<thead><tr><th>You write</th><th>Which constructor runs</th><th>Resulting node</th></tr></thead>
+<tbody>
+<tr><td><code>new Node(10)</code></td><td><code>Node(int)</code></td><td>item = 10, next = NULL</td></tr>
+<tr><td><code>new Node</code></td><td><code>Node()</code></td><td>item = 0, next = NULL</td></tr>
+</tbody>
+</table>
+
+<div class="note">Notice both constructors set <code>next = NULL</code>. That's why you've never had to write <code>n3-&gt;next = NULL;</code> by hand when building a chain — the constructor already did it. A node fresh out of <code>new</code> is always a complete, terminated one-node chain.</div>
+
+<h2>Why "no return type" is not an oversight</h2>
+
+<p>An ordinary function hands something back to whoever called it. Nobody calls a constructor, so there's nobody to hand anything to — it runs on the new variable and that's the end of it. A return type would have nothing to describe. Writing <code>void Node::Node()</code> is actually a compile error, not just bad style.</p>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — when does <code>Node::Node(int)</code> run?</p>
+  <button class="opt" data-correct>Automatically, once, when a Node is created by <code>new Node(10)</code></button>
+  <button class="opt">Every time you read or write <code>n1-&gt;item</code></button>
+  <button class="opt">Only if you call <code>n1.Node(10)</code> yourself</button>
+  <div class="feedback good" data-feedback-good>Right — creation time, automatically, exactly once per node. You never write the call.</div>
+  <div class="feedback bad" data-feedback-bad>A constructor isn't something you call by name and isn't tied to field access — it fires once, on its own, at the moment the variable comes into existence.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="null|null.|it is null|it's null">
+  <p class="prompt">Second check — one word: after <code>Node *p = new Node(7);</code>, what is the value of <code>p-&gt;next</code>?</p>
+  <input type="text" placeholder="one word">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — <code>NULL</code>, set by <code>next = NULL;</code> inside <code>Node::Node(int)</code>, not by anything you wrote.</div>
+  <div class="feedback bad" data-feedback-bad>Look at the body of <code>Node::Node(int newItem)</code> above — it sets two fields, and you only supplied one of them.</div>
+</div>
+
+<p class="ask-agent">You now have every piece of struct syntax the <code>List</code> code uses. Next, a short but important clarification on that constructor table above — then <code>List</code> itself.</p>
+
+<div class="nav">
+  <a href="0006e-declaration-vs-definition.html">&larr; declaration vs definition, and ::</a>
+  <a href="0006g-which-vs-when.html">next: which constructor, vs. when &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

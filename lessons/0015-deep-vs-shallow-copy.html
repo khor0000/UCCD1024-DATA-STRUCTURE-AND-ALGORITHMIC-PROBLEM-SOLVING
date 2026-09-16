@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15 — Deep copy vs shallow copy</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 15 of the linked-list crash sequence · Theory (midterm Q3b)</div>
+<h1>Deep copy vs shallow copy</h1>
+
+<p>A shallow copy copies the <code>List</code>'s own variables (<code>head</code>, <code>count</code>) but not the Nodes they point to — both Lists end up sharing one chain. A deep copy makes brand-new Nodes too, so each List has its own separate chain.</p>
+
+<div class="metaphor">
+<p>Think of <code>head</code> as a locker <em>number</em> written on a sticky note, not the locker itself. Copying the sticky note (shallow copy) gives you a second note with the same number on it — both notes point at the one shared locker. Making a <span class="term">deep copy</span> means renting a brand-new locker, moving the contents in, and writing the <em>new</em> locker's number on your note instead.</p>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Retrieval check &bull; before reading on</strong>
+  <p>On paper, without scrolling anywhere:</p>
+  <p>1. Write the <code>struct List</code> declaration &mdash; both fields, with types.<br>
+     2. <code>b = a;</code> where both are <code>book</code> structs. Write the two lines C++ silently performs.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal answers</summary>
+  <pre><code>struct List {
+    int   count;
+    Node *head;
+};
+
+b.title = a.title;
+b.pages = a.pages;</code></pre>
+  <p>If either did not come out, stop and re-do <a href="0007-the-list-container.html">lesson 7</a> and <a href="0015a-copying-a-struct.html">lesson 15a</a> first. This entire lesson is those two facts pushed one step further &mdash; there is nothing here that will land without them.</p>
+</details>
+
+<h2>The setup: copying a List</h2>
+
+<p>Say you have <code>List a;</code> already holding the chain <code>10 &rarr; 20</code>, and you write:</p>
+
+<pre><code>List b = a;</code></pre>
+
+<h2>The same rule you just learnt, applied to List</h2>
+
+<p>From <a href="0015a-copying-a-struct.html">lesson 15a</a>: <code>=</code> on a struct copies <strong>every field, one by one</strong>. <code>List</code> has two fields, so <code>List b = a;</code> quietly does the same job as writing both of these yourself &mdash; exactly as <code>book b = a;</code> copied a title and a page count:</p>
+
+<pre><code>b.head = a.head;
+b.count = a.count;</code></pre>
+
+<p>That's it — nothing about the Nodes <code>head</code> points at is touched. Only the field <em>values</em> — the addresses and numbers stored directly inside the <code>List</code> struct — get copied. This is a <span class="term">shallow copy</span>, and it's what C++ does automatically for <code>List b = a;</code> unless you write extra code to do something else.</p>
+
+<h2>Two different addresses live in one line &mdash; only one of them matters</h2>
+
+<p>Before any diagram, settle this, because everything below depends on it. Look at a single field:</p>
+
+<pre><code>head = 0x500</code></pre>
+
+<p>There are <strong>two</strong> addresses hiding in that line, and they are not the same thing:</p>
+
+<table>
+<thead><tr><th></th><th>Example</th><th>Matters for Q3b?</th></tr></thead>
+<tbody>
+<tr><td>The address where <code>head</code> <strong>lives</strong></td><td><code>0x900</code></td><td><strong>No.</strong> Never. It is bookkeeping.</td></tr>
+<tr><td>The address <code>head</code> <strong>holds</strong></td><td><code>0x500</code></td><td><strong>Yes.</strong> This is the entire answer.</td></tr>
+</tbody>
+</table>
+
+<p>Whenever this lesson says "the same address" or "a different address", it means the second one &mdash; the <em>value written inside</em> <code>head</code>. It never means where the field itself sits.</p>
+
+<div class="note">
+<p>You might reasonably wonder: <em>does a deep copy move the List&rsquo;s fields to different addresses, or split them apart somehow?</em> <strong>No.</strong> In both kinds of copy, <code>b</code> is one struct with two fields sitting in one <em>contiguous</em> block of memory, exactly like <code>a</code>. Fields of a single struct are always adjacent and cannot drift apart. That part of the picture is identical in a shallow copy and a deep copy, and it is never what the question is about.</p>
+<p>A struct spans several addresses only in the trivial sense that its fields have different sizes and therefore different offsets inside that one block &mdash; <code>count</code> at <code>0x8FC</code>, <code>head</code> four bytes later at <code>0x900</code>. Do not read exact byte sizes off these diagrams; the numbers are chosen to be legible, not to be arithmetically accurate, and no question here asks for them.</p>
+</div>
+
+<h2>So what <em>is</em> the difference?</h2>
+
+<p><strong>A deep copy creates new Nodes. A shallow copy does not.</strong> That is the substance of the whole topic, in one sentence.</p>
+
+<p><code>b.head</code> ending up with a different value is not a separate fact to memorise &mdash; it is the visible <em>symptom</em> of that one difference. New nodes exist, so <code>b.head</code> holds the address of one of them.</p>
+
+<table>
+<thead><tr><th></th><th>Shallow copy</th><th>Deep copy</th></tr></thead>
+<tbody>
+<tr><td><code>b</code>&rsquo;s own two fields</td><td>one contiguous struct</td><td>one contiguous struct &mdash; <strong>identical</strong></td></tr>
+<tr><td>value in <code>b.count</code></td><td><code>2</code></td><td><code>2</code> &mdash; <strong>identical</strong></td></tr>
+<tr><td><strong>new Nodes created?</strong></td><td><strong>no</strong></td><td><strong>yes</strong></td></tr>
+<tr><td>value in <code>b.head</code></td><td>same as <code>a.head</code></td><td>different &mdash; the address of a new node</td></tr>
+</tbody>
+</table>
+
+<p>Three of those four rows are the same in both columns. Only the last two differ, and the fourth follows from the third.</p>
+
+<h2>How you are allowed to draw it</h2>
+
+<p>Either form from <a href="0007-the-list-container.html">lesson 7</a> is accepted here &mdash; one box labelled <code>List</code> with both fields named inside it, or two separate one-cell boxes. <strong>Splitting the box is a drawing choice, not part of the answer.</strong></p>
+
+<p>There is exactly one constraint. <code>head</code>&rsquo;s <em>value</em> must be written down and legible, and the arrow must leave <code>head</code> specifically &mdash; never <code>count</code>, which is a plain number and points at nothing. A drawing that reads <code>head = 0x500</code> inside a single labelled box satisfies that completely.</p>
+
+<p>The diagrams below split the fields only so each one&rsquo;s own address can be shown while the mechanism is being explained. Once you are answering the question, drop that &mdash; it earns nothing.</p>
+
+<h2>Tracing it, address by address</h2>
+
+<p>Before the copy: <code>a</code>'s <code>head</code> (address <code>0x900</code>) holds <code>0x500</code>, and <code>a</code>'s <code>count</code> (address <code>0x8FC</code>) holds <code>2</code>. The chain itself lives at box1 (<code>0x500</code>, item <code>10</code>) &rarr; box2 (<code>0x520</code>, item <code>20</code>, <code>next</code> <code>NULL</code>).</p>
+
+<div class="diagram">
+  <div class="node">
+    <div class="addr">0x8FC</div>
+    <div class="cell"><span class="item">2</span></div>
+    <div class="addr" style="margin-top:.3rem">a.count</div>
+  </div>
+  <div class="node">
+    <div class="addr">0x900</div>
+    <div class="cell"><span class="next">0x500</span></div>
+    <div class="addr" style="margin-top:.3rem">a.head</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x500</div>
+    <div class="cell"><span class="item">10</span><span class="next">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">box1</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">box2</div>
+  </div>
+</div>
+
+<p>After <code>List b = a;</code> runs as a shallow copy: <code>b</code> gets its own <code>count</code> and <code>head</code> boxes (different addresses &mdash; e.g. <code>b.count</code> at <code>0x920</code> and <code>b.head</code> at <code>0x924</code>, <code>count</code> first, because that is the order the two fields are declared in), but the <em>values</em> copied into them are identical. <code>b.head</code> holds the same <code>0x500</code> that <code>a.head</code> holds, so <strong>both arrows land on the one box1</strong>:</p>
+
+<div class="diagram" style="align-items:center">
+  <div style="display:flex;flex-direction:column;gap:1.2rem">
+    <div style="display:flex;gap:.4rem;align-items:center">
+      <div class="node">
+        <div class="addr">0x8FC</div>
+        <div class="cell"><span class="item">2</span></div>
+        <div class="addr" style="margin-top:.3rem">a.count</div>
+      </div>
+      <div class="node">
+        <div class="addr">0x900</div>
+        <div class="cell"><span class="next">0x500</span></div>
+        <div class="addr" style="margin-top:.3rem">a.head</div>
+      </div>
+      <div class="arrow" style="margin-bottom:1.4rem"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+    </div>
+    <div style="display:flex;gap:.4rem;align-items:center">
+      <div class="node">
+        <div class="addr">0x920</div>
+        <div class="cell"><span class="item">2</span></div>
+        <div class="addr" style="margin-top:.3rem">b.count</div>
+      </div>
+      <div class="node">
+        <div class="addr">0x924</div>
+        <div class="cell"><span class="next highlight">0x500</span></div>
+        <div class="addr" style="margin-top:.3rem">b.head</div>
+      </div>
+      <div class="arrow" style="margin-bottom:1.4rem"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:.2rem">
+    <div class="node highlight">
+      <div class="addr">0x500</div>
+      <div class="cell"><span class="item">10</span><span class="next">0x520</span></div>
+      <div class="addr" style="margin-top:.3rem">box1 &mdash; the ONE shared node</div>
+    </div>
+    <div class="arrow" style="margin-bottom:1.4rem"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+    <div class="node">
+      <div class="addr">0x520</div>
+      <div class="cell"><span class="item">20</span><span class="next null">NULL</span></div>
+      <div class="addr" style="margin-top:.3rem">box2 &mdash; also shared</div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;font-size:.9rem;opacity:.8">Two arrows, one destination. Both <code>a.head</code> and <code>b.head</code> hold <code>0x500</code>, so both land on box1 &mdash; there is no second chain anywhere in this picture.</p>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Every Arrow Leaves The Pointer</strong>
+  <p>An arrow always runs <strong>from the box that holds the address, to the box living at that address</strong>. Never the reverse. Both <code>a.head</code> and <code>b.head</code> hold <code>0x500</code>, so both arrows leave them and converge on box1 &mdash; box1 holds neither of their addresses and has no arrow back to either.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>a.head &rarr; box1 &larr; b.head</code> &mdash; two arrows converging</td>
+      <td><code>a.head &rarr; box1 &rarr; b.head</code> &mdash; a chain through b.head</td>
+    </tr></tbody>
+  </table>
+</div>
+
+<p><code>a.head</code> and <code>b.head</code> are two separate boxes — but they hold the <em>same address</em>, <code>0x500</code>. Both arrows point at the one box1. There is still only one chain in memory. Now suppose something later deletes <code>a</code>’s first node &mdash; the memory at <code>0x500</code> is handed back and that box stops existing. (You will write the operation that does this on Day 4; you do not need it here.) <code>a.head</code> gets updated to point at box2, but nothing tells <code>b</code>: <code>b.head</code> is left still holding <code>0x500</code>, the address of a Node that no longer exists. Reading through <code>b</code> after that is reading through a dangling pointer.</p>
+
+<div class="note">
+<p><strong>Which way do the arrows go?</strong> Every arrow in these chains points <em>forward only</em> &mdash; <code>head</code> to box1, box1 to box2, and box2 to nothing. There is never a backward arrow, and this is not a drawing convention: box1&rsquo;s <code>next</code> cell physically holds box2&rsquo;s address, while box2 holds only an item and <code>NULL</code>. Box2 stores no address at all, so it has no way to refer back to box1 and there is nothing for a backward arrow to represent.</p>
+<p>That is what <em>singly</em> linked means. From box2 you can never get back to box1. (A <em>doubly</em> linked list adds a second pointer field for exactly this purpose &mdash; it is not in your syllabus.)</p>
+</div>
+
+<h2>What a deep copy does instead</h2>
+
+<p>A deep copy doesn't just copy <code>head</code>'s value — it walks <code>a</code>'s chain and calls <code>new Node(...)</code> for each item, building <code>b</code> a completely separate chain with the same items in the same order. After a deep copy, <code>b.head</code> holds a <em>different</em> address (<code>0x560</code>, a freshly-<code>new</code>ed box1-copy) — not <code>0x500</code> — and that new box's <code>next</code> points at another freshly-<code>new</code>ed box (<code>0x580</code>), not at <code>a</code>'s <code>0x520</code>:</p>
+
+<div class="diagram">
+  <div class="node">
+    <div class="addr">0x8FC</div>
+    <div class="cell"><span class="item">2</span></div>
+    <div class="addr" style="margin-top:.3rem">a.count</div>
+  </div>
+  <div class="node">
+    <div class="addr">0x900</div>
+    <div class="cell"><span class="next">0x500</span></div>
+    <div class="addr" style="margin-top:.3rem">a.head</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x500</div>
+    <div class="cell"><span class="item">10</span><span class="next">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">a's box1</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">a's box2</div>
+  </div>
+</div>
+<div class="diagram">
+  <div class="node">
+    <div class="addr">0x920</div>
+    <div class="cell"><span class="item">2</span></div>
+    <div class="addr" style="margin-top:.3rem">b.count</div>
+  </div>
+  <div class="node">
+    <div class="addr">0x924</div>
+    <div class="cell"><span class="next highlight">0x560</span></div>
+    <div class="addr" style="margin-top:.3rem">b.head</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node highlight">
+    <div class="addr">0x560</div>
+    <div class="cell"><span class="item">10</span><span class="next">0x580</span></div>
+    <div class="addr" style="margin-top:.3rem">b's own box1 — new Node, same item</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node highlight">
+    <div class="addr">0x580</div>
+    <div class="cell"><span class="item">20</span><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">b's own box2 — new Node, same item</div>
+  </div>
+</div>
+
+<div class="note">
+<p>You might reasonably wonder: <em>does a deep copy create a whole new <code>List</code>?</em> <strong>No.</strong> <code>b</code> already exists &mdash; it came into being the moment you wrote <code>List b</code>, and its <code>count</code> and <code>head</code> boxes sit at the same addresses whichever kind of copy happens. Nothing about copying moves <code>b</code>.</p>
+<p>What a deep copy builds is <strong>a second chain of Nodes</strong>, and that is the <em>only</em> difference between the two operations. Both copy <code>count</code>. Both write an address into <code>b</code>&rsquo;s own existing <code>head</code> box. Only the deep one first calls <code>new</code> for each item, so the address it ends up writing is a different one.</p>
+<p>In one line: <strong>shallow and deep differ in exactly one thing &mdash; whether new Nodes are created.</strong></p>
+</div>
+
+<p>Both Lists still carry <code>count = 2</code> &mdash; a deep copy copies the plain fields too, exactly as a shallow copy does. The <em>only</em> difference between the two pictures is the value inside <code>b.head</code>: <code>0x500</code> (a’s node) versus <code>0x560</code> (b’s own node). Now <code>a</code> and <code>b</code> have two fully independent chains (<code>0x500</code>/<code>0x520</code> vs. <code>0x560</code>/<code>0x580</code>) that happen to hold equal values. Removing from <code>a</code> never affects <code>b</code>, because they don't share a single Node address.</p>
+
+<table>
+<thead><tr><th></th><th>Shallow copy</th><th>Deep copy</th></tr></thead>
+<tbody>
+<tr><td>What gets copied</td><td>Only <code>head</code>, <code>count</code> (the List's own fields)</td><td><code>head</code>, <code>count</code>, <strong>and</strong> new Nodes for every item in the chain</td></tr>
+<tr><td>Nodes after copying</td><td>Both Lists point at the <strong>same</strong> Nodes</td><td>Each List points at its <strong>own</strong> Nodes</td></tr>
+<tr><td>Editing one List's chain</td><td>Affects both — they share the same memory</td><td>Affects only that List</td></tr>
+<tr><td>What C++ does with <code>=</code> by default</td><td>This one, automatically</td><td>Only if you write the copying code yourself</td></tr>
+</tbody>
+</table>
+
+<div class="note"><strong>Exam-ready answer (Q3b, theory):</strong> "A shallow copy copies only the <code>head</code> pointer and <code>count</code>, so both Lists end up pointing at the same chain of Nodes. A deep copy creates new Nodes for the second List, so the two Lists have separate chains that don't affect each other."</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">List <code>a</code> holds <code>10 &rarr; 20</code>. You run <code>List b = a;</code> (a shallow copy), then <code>a</code>’s first node is deleted. What does <code>b</code> look like now?</p>
+  <button class="opt">b still correctly holds 10 &rarr; 20, unaffected</button>
+  <button class="opt" data-correct>b.head now points at a deleted Node — box1 was shared by both</button>
+  <button class="opt">b automatically gets its own copy of box1 the moment a.remove(1) runs</button>
+  <div class="feedback good" data-feedback-good>Right. A shallow copy never gave b its own Nodes — b.head held the same address a.head did. When that Node is deleted, b is left holding a dangling pointer to it.</div>
+  <div class="feedback bad" data-feedback-bad>Re-check the shallow-copy diagram above: does b get its own box1, or does it hold the same address a.head holds?</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="address|the address|same address|the same address">
+  <p class="prompt">Second check — after a shallow copy, a.head and b.head hold two different boxes, but the same what?</p>
+  <input type="text" placeholder="what a.head and b.head have in common">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Right — the same address. Two separate head boxes, but the value written inside them (box1's address) is identical, so both point at one shared Node.</div>
+  <div class="feedback bad" data-feedback-bad>Look at the shallow-copy diagram above: a.head and b.head are different boxes at different addresses — but what value is written inside each of those boxes?</div>
+</div>
+
+<h2>What <code>count</code> is actually for</h2>
+
+<p>You might reasonably wonder: <em>if I can already walk the whole chain with <code>head</code> alone, what is <code>count</code> doing there?</em></p>
+
+<p>Direct answer: <strong>traversal does not need <code>count</code>.</strong> This loop visits every node and never looks at it:</p>
+
+<pre><code>Node *cur = head;
+while (cur != NULL) {
+    cout &lt;&lt; cur-&gt;item;
+    cur = cur-&gt;next;
+}</code></pre>
+
+<p><code>count</code> is a <strong>stored answer to a question you would otherwise have to walk for</strong> &mdash; "how many items are in this list?"</p>
+
+<table>
+<thead><tr><th></th><th>Without <code>count</code></th><th>With <code>count</code></th></tr></thead>
+<tbody>
+<tr><td>How many items?</td><td>walk the whole chain and tally</td><td>read one number, instantly</td></tr>
+<tr><td>What it costs</td><td>time, proportional to the length</td><td>discipline &mdash; every insert and remove must update it</td></tr>
+</tbody>
+</table>
+
+<p>That second cost is why <code>count</code> matters in an exam: <strong>forgetting to update it is the single most-seeded bug in find-the-bug questions.</strong> A list whose <code>count</code> disagrees with its chain is broken even though every node is intact.</p>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; A Walking Pointer Never Uses new</strong>
+  <p>A traversal pointer <strong>borrows</strong> a node that already exists. Allocating one first creates a node that the very next line abandons &mdash; unreachable, never freed, a memory leak.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>Node *cur = head;</code></td>
+      <td><code>Node *cur = new Node;</code><br><code>cur = head;</code></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<h2>On paper &mdash; the graded skill</h2>
+
+<p>Q3b is a <strong>theory</strong> question, and the lecturer&rsquo;s tip sheet says exactly that and nothing more. You are never handed code and asked "is this a deep or a shallow copy?" &mdash; that skill is genuinely useful and genuinely not examined here. Do not spend time on it.</p>
+
+<p>What <em>is</em> marked: What is marked is a written sentence and, often, a pair of drawings. Both have to come out of your head, so produce both now.</p>
+
+<div class="paper-task">
+  <strong class="title">On paper &bull; closed book</strong>
+  <p>1. Write the exam-ready answer above from memory. Two sentences: one for shallow, one for deep.<br>
+     2. Draw both pictures for a List <code>a</code> holding <code>10 &rarr; 20</code> copied into <code>b</code> &mdash; the shallow one, then the deep one. Show <code>count</code> and <code>head</code> for <em>both</em> lists in <em>both</em> drawings.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal &mdash; how to mark yourself</summary>
+  <p>The sentence earns its marks on two words: <strong>same</strong> (shallow: both Lists point at the same nodes) and <strong>new</strong> (deep: new nodes are created for the second List). If both words are in your answer with the right structure attached, the mark is there.</p>
+  <p>The drawings are right if: shallow has <strong>one</strong> chain with two arrows landing on it; deep has <strong>two</strong> chains at different addresses; and <code>count</code> reads <code>2</code> in all four List boxes across both drawings.</p>
+</details>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Shallow Still Makes New Boxes</strong>
+  <p>A shallow copy is not "nothing gets copied." <code>b</code> genuinely gets its own <code>count</code> box and its own <code>head</code> box, at its own addresses. What it does not get is its own <strong>Nodes</strong>. Drawing <code>a</code> and <code>b</code> sharing one <code>head</code> box is a different (and wrong) picture.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td>Two <code>head</code> boxes at different addresses, both holding <code>0x500</code>, two arrows to one node</td>
+      <td>One <code>head</code> box labelled <code>a.head / b.head</code></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<p class="ask-agent">If any part of this needed a second read, tell me which part &mdash; I fix the lesson, not patch it with a new one.</p>
+
+<div class="nav">
+  <a href="0015a-copying-a-struct.html">&larr; copying a struct with =</a>
+  <span>midterm Q3b &middot; rebuilt 2026-08-27</span>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

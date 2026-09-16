@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 23 — Read pre/in/post-order from a BST</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 23 · Binary Search Tree, part 2 of 2 · Midterm Q4e</div>
+<h1>Read pre/in/post-order from a BST</h1>
+
+<p><strong>Q4e asks for the pre-order, in-order and post-order output of a tree.</strong> One rule per traversal, applied the same way at every node &mdash; no recursion code to write, just the walking pattern.</p>
+
+<div class="paper-task">
+  <strong class="title">Retrieval check &bull; before reading on</strong>
+  <p>From <a href="0022-draw-a-bst.html">Lesson 22</a>: you're inserting a new item and you reach a node where <code>cur-&gt;item &gt; newItem</code> is true. Which way do you go?</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal</summary>
+  <p><strong>Left.</strong> The node holds something bigger than the new item, so the new item belongs to its left.</p>
+</details>
+
+<h2>The rule &mdash; three orders, one pattern</h2>
+
+<p>Each traversal visits every node once. &ldquo;Visit&rdquo; means <strong>print the item</strong>. At every node you do three things &mdash; go left, print this node, go right &mdash; and the <em>name</em> tells you <strong>when the node itself is printed</strong>:</p>
+
+<table>
+  <thead><tr><th>Traversal</th><th>Order at each node</th><th>Node is printed&hellip;</th></tr></thead>
+  <tbody>
+    <tr><td><strong>pre</strong>-order</td><td>node, left, right</td><td><strong>first</strong> &mdash; before either subtree</td></tr>
+    <tr><td><strong>in</strong>-order</td><td>left, node, right</td><td>in the <strong>middle</strong> &mdash; between the subtrees</td></tr>
+    <tr><td><strong>post</strong>-order</td><td>left, right, node</td><td><strong>last</strong> &mdash; after both subtrees</td></tr>
+  </tbody>
+</table>
+
+<p>&ldquo;Left&rdquo; and &ldquo;right&rdquo; here mean <em>the whole left subtree, fully finished, then the whole right subtree</em> &mdash; you always dive all the way down the left before you print anything on the right.</p>
+
+<h3>Worked example &mdash; the tree from Lesson 22</h3>
+
+<pre><code>          40
+        /    \
+      20      50
+     /  \    /  \
+   10    30 45   60</code></pre>
+
+<table>
+  <thead><tr><th>Traversal</th><th>Output</th></tr></thead>
+  <tbody>
+    <tr><td>pre-order (node, L, R)</td><td><code>40 20 10 30 50 45 60</code></td></tr>
+    <tr><td>in-order (L, node, R)</td><td><code>10 20 30 40 45 50 60</code></td></tr>
+    <tr><td>post-order (L, R, node)</td><td><code>10 30 20 45 60 50 40</code></td></tr>
+  </tbody>
+</table>
+
+<p>Walk the in-order one by hand: start at 40, go all the way left to 10 (print <code>10</code>), back up to 20 (print <code>20</code>), 20's right is 30 (print <code>30</code>), back up to 40 (print <code>40</code>), into the right subtree: left to 45 (print <code>45</code>), up to 50 (print <code>50</code>), 50's right 60 (print <code>60</code>). &rarr; <code>10 20 30 40 45 50 60</code>.</p>
+
+<div class="note"><strong>The free check &mdash; two parts, do both.</strong> In-order output of a BST is (1) the items in <strong>ascending</strong> order <em>and</em> (2) <strong>every node exactly once</strong>. <code>10 20 30 40 45 50 60</code> is ascending and has all 7. <br><br>Checking "is it ascending?" alone is <em>not</em> enough: if you drop a node in the middle, the remaining numbers can still look sorted and you will not notice. So <strong>count</strong> &mdash; a 7-node tree has 7 numbers in every traversal. If the count is short, you skipped a node (usually the root, printed the instant its left subtree finishes).</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Pre vs Post, And Finishing Left First</strong>
+  <table>
+    <thead><tr><th>Mistake</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>Printing a right-subtree node before finishing the left subtree</td><td>Fully finish the entire left subtree first &mdash; every node in it &mdash; then the node, then right.</td></tr>
+      <tr><td>Mixing up pre and post</td><td><strong>pre</strong> = node printed <strong>first</strong>. <strong>post</strong> = node printed <strong>last</strong>. The root is the first number of pre-order and the last number of post-order.</td></tr>
+      <tr><td>In-order jumps from the left subtree straight into the right, <strong>skipping the node between them</strong> (the root most often)</td><td>At every node: left subtree, <strong>then print this node</strong>, then right subtree. Count the output against the tree &mdash; same number of items as nodes.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="post-order|postorder|post order|post">
+  <p class="prompt">In which traversal is the root the <em>last</em> item printed?</p>
+  <input type="text" placeholder="which traversal?">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Yes &mdash; post-order prints each node after both its subtrees, so the root comes last.</div>
+  <div class="feedback bad" data-feedback-bad>&ldquo;post&rdquo; = node printed after (post) its subtrees. So the root is printed&hellip; when?</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book &bull; both skills together</strong>
+  <p>Insert this list into an empty BST, in this order: <code>50 &nbsp; 30 &nbsp; 70 &nbsp; 20 &nbsp; 40 &nbsp; 60 &nbsp; 80</code></p>
+  <ol>
+    <li>Draw the tree (boxes or circles, left/right children).</li>
+    <li>Write its <strong>pre-order</strong> output.</li>
+    <li>Write its <strong>in-order</strong> output &mdash; then confirm it is ascending.</li>
+    <li>Write its <strong>post-order</strong> output.</li>
+  </ol>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+<pre><code>          50
+        /    \
+      30      70
+     /  \    /  \
+   20    40 60   80</code></pre>
+  <p>pre-order (node, L, R): <code>50 30 20 40 70 60 80</code></p>
+  <p>in-order (L, node, R): <code>20 30 40 50 60 70 80</code> &mdash; ascending &check;</p>
+  <p>post-order (L, R, node): <code>20 40 30 60 80 70 50</code></p>
+  <p>Checks: <code>50</code> is first in pre-order and last in post-order (it is the root). All three outputs contain all seven numbers exactly once.</p>
+</details>
+
+<div class="paper-task">
+  <strong class="title">Produce it again &bull; closed book &bull; the node most often dropped is the root</strong>
+  <p>Insert into an empty BST, in order: <code>45 &nbsp; 20 &nbsp; 60 &nbsp; 10 &nbsp; 30 &nbsp; 55 &nbsp; 80 &nbsp; 25</code></p>
+  <ol>
+    <li>Draw the tree.</li>
+    <li>Write pre-order, in-order, post-order.</li>
+    <li>For the in-order line: <strong>count it</strong> — 8 nodes, so 8 numbers — and check it is ascending. Both.</li>
+  </ol>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+<pre><code>            45
+          /    \
+        20      60
+       /  \    /  \
+     10    30 55   80
+          /
+        25</code></pre>
+  <p>pre-order: <code>45 20 10 30 25 60 55 80</code></p>
+  <p>in-order: <code>10 20 25 30 45 55 60 80</code> — 8 numbers, ascending &check; (the root <code>45</code> sits in the middle, printed the moment the <code>20</code> subtree finishes)</p>
+  <p>post-order: <code>10 25 30 20 55 80 60 45</code></p>
+</details>
+
+<p class="ask-agent">Ask your tutor for a larger insertion list to draw if the small one felt easy &mdash; the exam tree can have 12&ndash;17 nodes, but the rule does not change. Recursion (the code behind these traversals) is a separate September topic for the final.</p>
+
+<div class="nav">
+  <a href="0022-draw-a-bst.html">&larr; building a BST</a>
+  <a href="../reference/0001-mistake-ledger.html">tonight: the mistake ledger &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

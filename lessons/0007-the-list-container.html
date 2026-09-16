@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7 — The List container</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 7 of the linked-list crash sequence · List container</div>
+<h1>The List container</h1>
+
+<p>In Lesson 6 you built a chain by hand, juggling <code>n1</code>, <code>n2</code>, <code>n3</code> and <code>head</code> as loose separate variables. That works for three nodes and falls apart at thirty. The one idea in this lesson: <strong>a whole chain of any length can be tracked by exactly two variables</strong>, and <code>List</code> is just a struct that holds those two.</p>
+
+<div class="note"><strong>"Container" just means this:</strong> a struct that keeps track of a collection for you and hands you the operations for working with it. You talk to the container — <code>list.insert(...)</code>, <code>list.get(...)</code> — and never handle the individual nodes yourself. That's the entire word. <code>List</code> is a container; a <code>Node</code> is not.</div>
+
+<pre><code>struct List {
+    int   count;    // how many nodes are in the chain right now
+    Node *head;     // the address of the first node (NULL if empty)
+    // ...member functions, one per lesson from here on
+};</code></pre>
+
+<div class="metaphor">
+<p><span class="term">A treasure hunt organizer.</span> You don't memorize every stop of the hunt. You know two things: where stop 1 is, and how many stops exist. Anyone who wants stop 4 asks you, and you walk the chain from stop 1 counting as you go. Two facts, any length of hunt.</p>
+</div>
+
+<h2>What that actually looks like in memory</h2>
+
+<p>Here's a List holding the same 10 → 20 → 30 chain you built by hand last lesson. The List is <em>two boxes on the left</em>. The chain is separate, out in memory where <code>new</code> put it:</p>
+
+<div class="diagram">
+  <div class="node">
+    <div class="addr">0x8FC</div>
+    <div class="cell"><span class="item">3</span></div>
+    <div class="addr" style="margin-top:.3rem">list.count</div>
+  </div>
+  <div class="node highlight" style="margin-left:.6rem">
+    <div class="addr">0x900</div>
+    <div class="cell"><span class="next">0x500</span></div>
+    <div class="addr" style="margin-top:.3rem">list.head</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x500</div>
+    <div class="cell"><span class="item">10</span><span class="next">0x520</span></div>
+    <div class="addr" style="margin-top:.3rem">box1</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x520</div>
+    <div class="cell"><span class="item">20</span><span class="next">0x540</span></div>
+    <div class="addr" style="margin-top:.3rem">box2</div>
+  </div>
+  <div class="arrow"><svg viewBox="0 0 32 12" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" stroke-width="1.5"/><path d="M23 1L30 6L23 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+  <div class="node">
+    <div class="addr">0x540</div>
+    <div class="cell"><span class="item">30</span><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">box3</div>
+  </div>
+</div>
+
+<p>Read the two left boxes carefully — together they are the whole List. Note they're drawn as two <em>single-cell</em> boxes, not as one two-cell box: a two-cell box in these lessons always means a Node, and the List is not a Node.</p>
+
+<ul>
+<li><code>count</code> lives at <code>0x8FC</code> and holds <code>3</code>. A plain int. It is <em>not</em> a pointer and points at nothing.</li>
+<li><code>head</code> lives at <code>0x900</code> — its own separate variable, sitting right next to <code>count</code> in memory — and holds the <em>value</em> <code>0x500</code>, which is box1's address. Same two-box relationship as every pointer since Lesson 1: the variable is one box, the Node it refers to is a completely separate box elsewhere.</li>
+<li>Boxes 1, 2 and 3 are <strong>not inside the List</strong>. The List doesn't contain the nodes — it only knows where the chain starts. Box2 and box3 are reachable only by following <code>next</code> from box1.</li>
+</ul>
+
+<p>That's the whole container. Every List function you'll meet from here on does its work by starting at <code>head</code> and walking, exactly like the traversal loop you traced in Lesson 6c.</p>
+
+<h2>What <code>count = 3</code> actually counts</h2>
+
+<p><code>count</code> is a plain tally of <strong>how many nodes exist</strong>. Nothing more. <code>count = 3</code> means three nodes &mdash; not four, and there is no node zero.</p>
+
+<p>You might reasonably wonder: <em>so are the nodes numbered 0, 1, 2 or 1, 2, 3?</em> This is worth getting straight now, because it is the single most common thing to carry in wrongly from outside reading.</p>
+
+<table>
+<thead><tr><th></th><th>This course</th><th>Arrays, and most online tutorials</th></tr></thead>
+<tbody>
+<tr><td>Position of the head</td><td><code>1</code></td><td><code>0</code></td></tr>
+<tr><td>Position of the last node</td><td><code>count</code></td><td><code>count - 1</code></td></tr>
+<tr><td>Valid positions when <code>count = 3</code></td><td><code>1, 2, 3</code></td><td><code>0, 1, 2</code></td></tr>
+<tr><td>What <code>count</code> itself holds</td><td colspan="2">the number of nodes &mdash; identical either way</td></tr>
+</tbody>
+</table>
+
+<p><strong>This course is 1-indexed.</strong> <code>find(1)</code> returns the head. Almost every linked-list video and tutorial site you will find is 0-indexed, so if you have watched any, that mismatch is already in your head and will show up as an off-by-one in <code>insert</code> and <code>remove</code>. The tally is the same in both worlds; only the <em>positions</em> differ.</p>
+
+<h2>What <code>count</code> counts &mdash; and where position 1 is</h2>
+
+<p><code>count = 2</code> means <strong>two nodes</strong>. Not three. <code>count</code> is a <em>quantity</em> &mdash; it answers "how many?", and never "what is the last position?"</p>
+
+<p>Those two questions give different numbers in most languages, because most things are numbered from zero. <strong>This course numbers list positions from 1.</strong> <code>find(1)</code> returns the head. There is no position 0 anywhere in this <code>List</code>.</p>
+
+<table>
+<thead><tr><th></th><th>Array <code>int a[2]</code></th><th>This course&rsquo;s <code>List</code>, <code>count = 2</code></th></tr></thead>
+<tbody>
+<tr><td>First element</td><td><code>a[0]</code></td><td>position <strong>1</strong></td></tr>
+<tr><td>Last element</td><td><code>a[1]</code></td><td>position <strong>2</strong></td></tr>
+<tr><td>Valid range</td><td><code>0 &hellip; count-1</code></td><td><strong><code>1 &hellip; count</code></strong></td></tr>
+</tbody>
+</table>
+
+<p>You might reasonably wonder: <em>why does this matter, if I can see the nodes in the drawing?</em> Because almost every linked-list tutorial online is 0-indexed like an array. If you have watched any, your instinct is calibrated to the other convention &mdash; and <code>insert</code>, <code>remove</code>, <code>get</code> and <code>set</code> all take a position, so the off-by-one lands on every one of them.</p>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Positions Start At One</strong>
+  <p><code>count</code> is how many nodes exist, and the last node is at position <code>count</code>, not <code>count - 1</code>. A loop written array-style walks one node past the end or stops one short.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td>positions <code>1</code> to <code>count</code>; head is position <code>1</code></td>
+      <td>positions <code>0</code> to <code>count-1</code>; head is position <code>0</code></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<h2>The empty list</h2>
+
+<p><code>List</code> has a constructor (Lesson 6f), so a brand-new list starts in a known state automatically:</p>
+
+<pre><code>List::List() {
+    head  = NULL;   // no first node yet
+    count = 0;      // nothing in the chain
+}</code></pre>
+
+<div class="diagram">
+  <div class="node">
+    <div class="addr">0x8FC</div>
+    <div class="cell"><span class="item">0</span></div>
+    <div class="addr" style="margin-top:.3rem">list.count</div>
+  </div>
+  <div class="node highlight" style="margin-left:.6rem">
+    <div class="addr">0x900</div>
+    <div class="cell"><span class="next null">NULL</span></div>
+    <div class="addr" style="margin-top:.3rem">list.head</div>
+  </div>
+</div>
+
+<p>No arrow, because there's nothing to point at. An empty list is exactly two things: <code>head == NULL</code> and <code>count == 0</code>, and <strong>they are always true together</strong>. A correct list can never have <code>count</code> nonzero while <code>head</code> is <code>NULL</code>, or the reverse. Burn that pairing in now — "did head and count stay in sync?" is the question behind nearly every bug you'll be asked to spot.</p>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — what are <code>head</code> and <code>count</code> for a freshly-constructed, empty List?</p>
+  <button class="opt" data-correct>head = NULL, count = 0</button>
+  <button class="opt">head = a Node with item 0, count = 0</button>
+  <button class="opt">head = NULL, count = 1</button>
+  <div class="feedback good" data-feedback-good>Right — an empty list has no first node (head is NULL) and zero items (count is 0), always together.</div>
+  <div class="feedback bad" data-feedback-bad>An empty list has genuinely nothing — no placeholder Node — and count must be 0 whenever head is NULL.</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="head|the head pointer|head is null">
+  <p class="prompt">Second check — a List's <code>count</code> says 3, but you have no idea where the chain starts. Which of the two fields did you lose?</p>
+  <input type="text" placeholder="which field?">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — count only tells you how many nodes exist; head is the only way back to any of them. Lose head and all three nodes are unreachable forever.</div>
+  <div class="feedback bad" data-feedback-bad>Look at the first diagram: which of the two boxes is the only thing joining the List to the chain?</div>
+</div>
+
+<h2>On paper &mdash; this is the part that counts</h2>
+
+<p>Everything above was reading. Reading a diagram is not the same skill as producing one, and the paper asks you to produce. Close this page for the next two tasks.</p>
+
+<div class="paper-task">
+  <strong class="title">On paper &bull; two drawings</strong>
+  <p>1. Write out the <code>struct List</code> declaration from memory &mdash; both fields, with their types.<br>
+     2. Draw a <code>List</code> holding the chain <code>10 &rarr; 20 &rarr; 30</code>. Show <code>count</code> and <code>head</code> as two separate one-cell boxes, each with its own address, and draw the arrow from <code>head</code> to the first node.<br>
+     3. Draw the same picture for an <em>empty</em> list.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal &mdash; the declaration</summary>
+  <pre><code>struct List {
+    int   count;
+    Node *head;
+};</code></pre>
+  <p>Four things to check in what you wrote. The closing brace is followed by a <strong>semicolon</strong>. If the constructor is declared too, it is written <code>List();</code> inside the braces and defined separately outside as <code>List::List() { ... }</code> &mdash; that outer one takes <em>no</em> semicolon. <code>count</code> is an <code>int</code> &mdash; no star. <code>head</code> is a <code>Node *</code> &mdash; it must have the star, because it holds an address, not a Node. If you wrote <code>Node head;</code> you declared a whole node sitting inside the List, which is a different structure entirely.</p>
+</details>
+
+<details class="reveal">
+  <summary>reveal &mdash; the two drawings</summary>
+  <p>The full list: <code>count</code> holds <code>3</code>, <code>head</code> holds <code>0x500</code>, arrow to box1, and the three nodes chained by <code>next</code> with <code>NULL</code> at the end &mdash; the first diagram in this lesson. The empty list: <code>count</code> holds <code>0</code>, <code>head</code> holds <code>NULL</code>, no arrow, no nodes at all &mdash; the second diagram.</p>
+  <p>Mark yourself on three things only: are <code>count</code> and <code>head</code> drawn as two <em>separate</em> boxes; is each node a <em>two-cell</em> box; and does the last node's <code>next</code> say <code>NULL</code> rather than being left blank.</p>
+</details>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; The Semicolon After A Struct</strong>
+  <p>A <code>struct</code> declaration is a <em>statement</em>, so its closing brace is followed by a semicolon. A <em>function</em> definition is not a statement, so its closing brace is bare. The two braces look identical on paper and the rule is opposite for each.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody>
+      <tr><td><code>struct List { ... }<strong>;</strong></code></td><td><code>struct List { ... }</code></td></tr>
+      <tr><td><code>List::List() { ... }</code></td><td><code>List::List() { ... }<strong>;</strong></code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Two ways to draw the List &mdash; both accepted</h2>
+
+<p>The diagrams above draw <code>count</code> and <code>head</code> as two separate one-cell boxes. You may instead draw <strong>one box labelled <code>List</code> with the two fields written inside it</strong>. Both are correct, and the second is closer to the truth &mdash; the two fields really do sit together inside one struct.</p>
+
+<table>
+<thead><tr><th></th><th>Two separate boxes</th><th>One box labelled <code>List</code></th></tr></thead>
+<tbody>
+<tr><td>What it shows</td><td>each field has its own address</td><td>the two fields belong to one struct</td></tr>
+<tr><td>Use it when</td><td>the question is about <strong>addresses</strong> &mdash; deep vs shallow copy, dangling pointers</td><td>the question is just "draw the list" &mdash; Q3a</td></tr>
+<tr><td>Must still show</td><td colspan="2">the <em>names</em> <code>head</code> and <code>count</code>, and an arrow leaving <code>head</code> for the first node</td></tr>
+</tbody>
+</table>
+
+<p>Whichever you pick, the arrow must leave <strong><code>head</code></strong> specifically &mdash; not the middle of the box, and never <code>count</code>. <code>count</code> is a plain number and points at nothing.</p>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; Write NULL, Not null</strong>
+  <p>The last node’s <code>next</code> is the C++ token <code>NULL</code>, in capitals. <code>null</code>, <code>Null</code> and <code>nul</code> are not C++ &mdash; that spelling belongs to Java and JavaScript. Leaving the cell blank is also wrong: blank means "not set yet", <code>NULL</code> means "deliberately the end of the chain". Those are two different states and the paper distinguishes them.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>next = NULL</code> in the last node</td>
+      <td><code>next = null</code>, or an empty cell</td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; The List Is Not A Node</strong>
+  <p>In a hand-drawn answer, a two-cell box means a Node and a one-cell box means a plain variable. Drawing the <code>List</code> as one two-cell box says "the List <em>is</em> a node holding an item and a next" &mdash; a different structure from the one you were asked for.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>count</code> and <code>head</code> as two one-cell boxes, arrow from <code>head</code> out to a separate two-cell node</td>
+      <td>One two-cell box labelled <code>list</code>, with the nodes drawn inside it</td>
+    </tr></tbody>
+  </table>
+</div>
+
+<p class="ask-agent">Anything above that didn't land &mdash; ask me. That's what I'm here for, and a question you had to ask means this lesson has a hole in it that I should fix.</p>
+
+<div class="nav">
+  <a href="0006g-which-vs-when.html">&larr; which constructor, vs. when</a>
+  <a href="0015a-copying-a-struct.html">next: copying a struct with = &rarr;</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

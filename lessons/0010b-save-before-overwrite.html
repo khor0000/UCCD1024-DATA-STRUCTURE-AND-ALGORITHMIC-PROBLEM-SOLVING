@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10b — save before you overwrite</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 10b of the linked-list crash sequence · The one rule behind every ordering trap</div>
+<h1>Save an address before you overwrite where it lives</h1>
+
+<p>You asked whether <code>pre-&gt;next = tmp;</code> then <code>tmp-&gt;next = cur;</code> &mdash; the two relinking lines in the wrong order &mdash; breaks the general case.</p>
+
+<p><strong>Direct answer: no.</strong> In the general case, those two lines work in <em>either</em> order, as long as <code>cur = pre-&gt;next;</code> ran first. That is different from position 1, where swapping the pair really does break it. One rule explains both, and it is the only ordering rule you need to carry into the exam.</p>
+
+<div class="metaphor">
+<p><span class="term">One notepad, one address.</span> You are about to paint a wall that has an address written on it. You have one notepad. If you copy the address onto the notepad <em>before</em> you paint, you can still write to the old place afterwards. If you paint first, the address is gone &mdash; the notepad never had it. Every pointer line in <code>insert</code> and <code>remove</code> is this: a place that holds an address, and a moment where you paint over it.</p>
+</div>
+
+<div class="note"><strong>The rule.</strong> Before a line overwrites a pointer, the address that pointer currently holds must already be saved somewhere else &mdash; in another variable, or in another node's <code>next</code> cell. Whatever line does that saving must run first. Nothing else about ordering matters.</div>
+
+<h2>General case, deliberately swapped &mdash; and it still works</h2>
+
+<p>List <code>10 &rarr; 20 &rarr; 30</code>, call <code>insert(2, 15)</code>. <code>pre</code> already holds <code>0x500</code> (node 10) and <code>tmp</code> holds <code>0x580</code> (the new node, <code>next</code> <code>NULL</code> from its constructor). Watch the overwrite happen <em>first</em> this time:</p>
+
+<div class="stepper" data-stepper>
+  <script type="application/json">
+  {
+    "code": [
+      "cur = pre->next;",
+      "pre->next = tmp;      // overwrite FIRST",
+      "tmp->next = cur;      // still fine — cur kept the address"
+    ],
+    "stages": [
+      { "line": -1, "caption": "Before any line runs. pre holds 0x500, tmp holds 0x580. There is no cur yet.",
+        "ptrs": [ {"name":"pre","addr":"0x904","val":"0x500"}, {"name":"tmp","addr":"0x90C","val":"0x580"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"}, {"addr":"0x580","item":"15","next":"NULL"} ] },
+      { "line": 0, "copy": {"from":"node:0x500.next","to":"ptr:cur"}, "caption": "cur = pre->next copies node 10's next cell (0x520) into a new variable cur. The address of node 20 is now saved in two places: node 10's next, and cur.",
+        "ptrs": [ {"name":"pre","addr":"0x904","val":"0x500"}, {"name":"tmp","addr":"0x90C","val":"0x580"}, {"name":"cur","addr":"0x908","val":"0x520"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"}, {"addr":"0x580","item":"15","next":"NULL"} ] },
+      { "line": 1, "copy": {"from":"ptr:tmp","to":"node:0x500.next"}, "caption": "pre->next = tmp overwrites node 10's next cell with 0x580. Node 10 now points at the new node. Node 20 is NOT lost — cur still holds 0x520.",
+        "ptrs": [ {"name":"pre","addr":"0x904","val":"0x500"}, {"name":"tmp","addr":"0x90C","val":"0x580"}, {"name":"cur","addr":"0x908","val":"0x520"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x580"}, {"addr":"0x580","item":"15","next":"NULL"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 2, "copy": {"from":"ptr:cur","to":"node:0x580.next"}, "caption": "tmp->next = cur copies cur's value (0x520) into the new node's next cell. Chain is now 10 -> 15 -> 20 -> 30. Swapped order, correct result.",
+        "ptrs": [ {"name":"pre","addr":"0x904","val":"0x500"}, {"name":"tmp","addr":"0x90C","val":"0x580"}, {"name":"cur","addr":"0x908","val":"0x520"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x580"}, {"addr":"0x580","item":"15","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] }
+    ]
+  }
+  </script>
+</div>
+
+<p>The overwrite on line 1 was harmless because line 0 had already copied node 20's address into <code>cur</code>. The rule was satisfied, so the order of the last two lines did not matter.</p>
+
+<h2>Now break the rule &mdash; skip <code>cur</code> entirely</h2>
+
+<p>Same start. This time there is no <code>cur = pre-&gt;next;</code> line at all &mdash; the code tries to read the old link back out of <code>pre-&gt;next</code> after overwriting it:</p>
+
+<div class="stepper" data-stepper>
+  <script type="application/json">
+  {
+    "code": [
+      "pre->next = tmp;",
+      "tmp->next = pre->next;   // pre->next is now tmp"
+    ],
+    "stages": [
+      { "line": -1, "caption": "Before any line runs. No cur was saved. Node 20's address (0x520) lives in exactly one place: node 10's next cell.",
+        "ptrs": [ {"name":"pre","addr":"0x904","val":"0x500"}, {"name":"tmp","addr":"0x90C","val":"0x580"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x520"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"}, {"addr":"0x580","item":"15","next":"NULL"} ] },
+      { "line": 0, "copy": {"from":"ptr:tmp","to":"node:0x500.next"}, "caption": "pre->next = tmp overwrites node 10's next with 0x580. The only copy of node 20's address is now gone. Nodes 20 and 30 are unreachable.",
+        "ptrs": [ {"name":"pre","addr":"0x904","val":"0x500"}, {"name":"tmp","addr":"0x90C","val":"0x580"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x580"}, {"addr":"0x580","item":"15","next":"NULL"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] },
+      { "line": 1, "copy": {"from":"node:0x500.next","to":"node:0x580.next"}, "caption": "tmp->next = pre->next reads node 10's next cell — which now holds 0x580, tmp's own address — and writes it into the new node's next. The new node points at itself.",
+        "ptrs": [ {"name":"pre","addr":"0x904","val":"0x500"}, {"name":"tmp","addr":"0x90C","val":"0x580"} ],
+        "nodes": [ {"addr":"0x500","item":"10","next":"0x580"}, {"addr":"0x580","item":"15","next":"0x580","note":"points at itself"}, {"addr":"0x520","item":"20","next":"0x540"}, {"addr":"0x540","item":"30","next":"NULL"} ] }
+    ]
+  }
+  </script>
+</div>
+
+<p>A one-node loop, and the rest of the list stranded in memory with nothing pointing at it. The bug was not the <em>order</em> of two lines &mdash; it was that no line ever saved <code>0x520</code> before <code>pre-&gt;next</code> was painted over.</p>
+
+<h2>Position 1 vs the general case</h2>
+
+<p>This is why the two cases <em>feel</em> like different rules but are the same one:</p>
+
+<table>
+<thead><tr><th></th><th>Position 1</th><th>General case</th></tr></thead>
+<tbody>
+<tr><td>What holds the address that is about to be overwritten</td><td><code>head</code> holds the old first node</td><td><code>pre-&gt;next</code> holds the node after <code>pre</code></td></tr>
+<tr><td>The line that saves it first</td><td><code>tmp-&gt;next = head;</code></td><td><code>cur = pre-&gt;next;</code></td></tr>
+<tr><td>The line that overwrites</td><td><code>head = tmp;</code></td><td><code>pre-&gt;next = tmp;</code></td></tr>
+<tr><td>Can the last two lines be swapped?</td><td><strong>No</strong> &mdash; the save and the overwrite <em>are</em> those two lines</td><td><strong>Yes</strong> &mdash; the save is a separate earlier line</td></tr>
+</tbody>
+</table>
+
+<p>At position 1, <code>tmp-&gt;next = head;</code> is doing double duty: it is both "link the new node" <em>and</em> "save the old first node's address." Swap it after <code>head = tmp;</code> and the save reads <code>head</code>'s new value &mdash; too late. In the general case the save is its own line, <code>cur = pre-&gt;next;</code>, and once it has run the other two lines are free.</p>
+
+<div class="exam-trap">
+  <strong class="title">Critical Exam Trap &bull; The Save Line Runs First</strong>
+  <p>In any pointer relink, find the line that copies the soon-to-be-overwritten address into a safe place. That line goes first. Everything after it can be written in the order that reads most naturally.</p>
+  <table>
+    <thead><tr><th>Correct (earns marks)</th><th>Incorrect (loses marks)</th></tr></thead>
+    <tbody><tr>
+      <td><code>cur = pre-&gt;next;</code> before <code>pre-&gt;next = tmp;</code><br><code>tmp-&gt;next = head;</code> before <code>head = tmp;</code></td>
+      <td>overwriting <code>head</code> or <code>pre-&gt;next</code> while it still holds the only copy of an address you need</td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div class="quiz" data-quiz>
+  <p class="prompt">Quick check — in the position-1 pair, why can't <code>tmp-&gt;next = head;</code> run second?</p>
+  <button class="opt" data-correct>It is the save line — by the time it runs, head has already been overwritten to tmp's address</button>
+  <button class="opt">C++ evaluates assignments right-to-left, so the order is fixed</button>
+  <button class="opt">head must always be the last variable changed in any function</button>
+  <div class="feedback good" data-feedback-good>Right — tmp->next = head is the only thing saving the old first node's address, and head = tmp destroys that address. Save before overwrite.</div>
+  <div class="feedback bad" data-feedback-bad>Look at the table: at position 1 the save and the overwrite are those exact two lines. Which one must be saved before the other runs?</div>
+</div>
+
+<div class="quiz short" data-quiz-short data-answer="cur = pre->next|cur=pre->next|cur = pre->next;|cur=pre->next;|cur = pre-&gt;next;">
+  <p class="prompt">Second check — type the one line in the general case that must run before <code>pre-&gt;next</code> is overwritten.</p>
+  <input type="text" placeholder="one line of code">
+  <button>Check</button>
+  <div class="feedback good" data-feedback-good>Exactly — cur = pre->next; is the save. After it, tmp->next = cur; and pre->next = tmp; are free to run in either order.</div>
+  <div class="feedback bad" data-feedback-bad>It is the line that copies the address of the node after pre into its own variable.</div>
+</div>
+
+<div class="paper-task">
+  <strong class="title">Produce it &bull; closed book</strong>
+  <p>On paper: write the three general-case lines (<code>cur = &hellip;</code>, <code>tmp-&gt;next = &hellip;</code>, <code>pre-&gt;next = &hellip;</code>) in an order that works. Then, in one sentence, say why <code>cur = pre-&gt;next;</code> cannot be the last of the three.</p>
+</div>
+
+<details class="reveal">
+  <summary>reveal answer</summary>
+  <pre><code>cur = pre-&gt;next;
+tmp-&gt;next = cur;
+pre-&gt;next = tmp;</code></pre>
+  <p><code>cur = pre-&gt;next;</code> is the save. If it runs last, <code>pre-&gt;next</code> has already been overwritten to <code>tmp</code>, so <code>cur</code> would capture <code>tmp</code>'s address instead of the node that should follow the new one.</p>
+</details>
+
+<p class="ask-agent">If any step of either stepper felt fast, step back through it — the whole lesson is those two traces side by side. Ask your tutor for a third variant if the rule hasn't clicked.</p>
+
+<div class="nav">
+  <a href="0010-insert-general-case.html">&larr; insert — the general case</a>
+  <a href="0011-remove-position-one.html">next: remove — position 1 &rarr;</a>
+</div>
+
+<script src="../assets/stepper.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
